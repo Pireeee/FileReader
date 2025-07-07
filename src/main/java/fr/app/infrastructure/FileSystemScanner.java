@@ -30,15 +30,21 @@ public class FileSystemScanner implements DiskScanner {
                 throw new IOException("Impossible d'accéder au dossier : " + path);
             }
             for (File child : files) {
+                if (child.isHidden()) {
+                    Logger.info("Fichier ou dossier caché ignoré : " + child.getName());
+                    continue; // Ignore hidden files and directories
+                }
                 FileNode childNode = scanRec(child.toPath());
                 node.addChild(childNode);
                 size += childNode.getSize();
+                Logger.info("Scanned: " + child.getName() + " - Size: " + childNode.getSize());
             }
         } else {
             size = file.length();
         }
 
         node.setSize(size);
+
         return node;
     }
 

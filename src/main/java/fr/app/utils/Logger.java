@@ -15,8 +15,9 @@ public class Logger {
         log("WARN", message);
     }
 
-    public static void error(String message) {
+    public static void error(String message, Exception e) {
         log("ERROR", message);
+        e.printStackTrace();
     }
 
     private static void log(String level, String message) {
