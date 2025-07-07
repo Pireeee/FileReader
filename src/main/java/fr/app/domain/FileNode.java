@@ -7,7 +7,7 @@ import java.util.List;
 public class FileNode {
     private final String name;
     private final Path path;
-    private final long size;
+    private long size;
     private final List<FileNode> children;
 
     public FileNode(String name, Path path, long size) {
@@ -19,6 +19,11 @@ public class FileNode {
 
     public void addChild(FileNode child) {
         children.add(child);
+    }
+
+    public FileNode withChildren(List<FileNode> children) {
+        this.children.addAll(children);
+        return this;
     }
 
     public String getName() {
@@ -35,5 +40,9 @@ public class FileNode {
 
     public Path getPath() {
         return this.path;
+    }
+
+    public void setSize(long size) {
+        this.size = size;
     }
 }

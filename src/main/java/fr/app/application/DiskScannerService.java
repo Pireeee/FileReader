@@ -5,9 +5,9 @@ import fr.app.domain.FileNode;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 public class DiskScannerService {
     private final ExecutorService executor;
@@ -18,14 +18,15 @@ public class DiskScannerService {
         this.executor = Executors.newSingleThreadExecutor();
     }
 
-    public CompletableFuture<FileNode> scanAsync(Path root) {
-        return CompletableFuture.supplyAsync(() -> {
+    public void scan(Path root, Consumer<FileNode> callback) {
+        executor.submit(() -> {
             try {
-                return scanner.scan(root);
+                FileNode result = scanner.scan(root);
+                callback.accept(result);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Erreur lors du scan : " + e.getMessage(), e);
             }
-        }, executor);
+        });
     }
 
     public void shutdown() {
