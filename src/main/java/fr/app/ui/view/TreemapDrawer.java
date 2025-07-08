@@ -1,4 +1,4 @@
-package fr.app.ui;
+package fr.app.ui.view;
 
 import fr.app.domain.FileNode;
 import fr.app.utils.Logger;

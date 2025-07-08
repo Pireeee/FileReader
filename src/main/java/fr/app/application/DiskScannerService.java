@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 public class DiskScannerService {
+
     private final ExecutorService executor;
     private final DiskScanner scanner;
 
@@ -18,10 +19,10 @@ public class DiskScannerService {
         this.executor = Executors.newSingleThreadExecutor();
     }
 
-    public void scan(Path root, Consumer<FileNode> callback) {
+    public void scan(Path rootPath, Consumer<FileNode> callback) {
         executor.submit(() -> {
             try {
-                FileNode result = scanner.scan(root);
+                FileNode result = scanner.scan(rootPath);
                 callback.accept(result);
             } catch (IOException e) {
                 throw new RuntimeException("Erreur lors du scan : " + e.getMessage(), e);
@@ -33,4 +34,3 @@ public class DiskScannerService {
         executor.shutdown();
     }
 }
-
