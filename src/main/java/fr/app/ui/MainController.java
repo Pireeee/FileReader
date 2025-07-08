@@ -85,4 +85,8 @@ public class MainController {
         }
         return item;
     }
+
+    public void shutdown() {
+        scannerService.shutdown();
+    }
 }
