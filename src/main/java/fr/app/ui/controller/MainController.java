@@ -3,6 +3,8 @@ package fr.app.ui.controller;
 import fr.app.application.DiskScannerService;
 import fr.app.domain.FileNode;
 import fr.app.ui.view.MainView;
+import fr.app.ui.view.TreemapDrawer;
+import fr.app.utils.SizeFormatter;
 import javafx.application.Platform;
 import javafx.scene.control.TreeItem;
 import javafx.stage.DirectoryChooser;
@@ -16,8 +18,9 @@ public class MainController {
     private final DiskScannerService diskScannerService;
     private final MainView view;
     private final Stage stage;
+    private final TreemapDrawer treemapDrawer = new TreemapDrawer();
 
-    private String selectedPath = "C:/"; // chemin par défaut
+    private String selectedPath = "C:/";
 
     public MainController(DiskScannerService diskScannerService, MainView view, Stage stage) {
         this.diskScannerService = diskScannerService;
@@ -27,7 +30,6 @@ public class MainController {
 
     public void init() {
         view.pathField.setText(selectedPath);
-
         view.chooseFolderButton.setOnAction(e -> openDirectoryChooser());
         view.scanButton.setOnAction(e -> startScan());
     }
@@ -44,11 +46,19 @@ public class MainController {
 
     private void startScan() {
         Path rootPath = Path.of(selectedPath);
-        diskScannerService.scan(rootPath, fileNode -> Platform.runLater(() -> updateTreeView(fileNode)));
+        diskScannerService.scan(rootPath, fileNode -> Platform.runLater(() -> onScanComplete(fileNode)));
+    }
+
+    private void onScanComplete(FileNode rootNode) {
+        Platform.runLater(() -> {
+            view.treemapPane.getChildren().clear();
+            treemapDrawer.drawTreemap(view.treemapPane, rootNode);
+            updateTreeView(rootNode);
+        });
     }
 
     private void updateTreeView(FileNode rootNode) {
-        TreeItem<String> rootItem = new TreeItem<>(rootNode.getName() + " (" + rootNode.getSize() + ")");
+        TreeItem<String> rootItem = new TreeItem<>(rootNode.getName() + " (" + SizeFormatter.format(rootNode.getSize()) + ")");
         buildTree(rootNode, rootItem);
         view.treeView.setRoot(rootItem);
     }
@@ -56,7 +66,8 @@ public class MainController {
     private void buildTree(FileNode node, TreeItem<String> parentItem) {
         if (node.getChildren() != null) {
             for (FileNode child : node.getChildren()) {
-                TreeItem<String> childItem = new TreeItem<>(child.getName() + " (" + child.getSize() + ")");
+
+                TreeItem<String> childItem = new TreeItem<>(child.getName() + " (" + SizeFormatter.format(child.getSize()) + ")");
                 parentItem.getChildren().add(childItem);
                 buildTree(child, childItem);
             }
