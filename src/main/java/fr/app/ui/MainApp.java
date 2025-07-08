@@ -9,11 +9,17 @@ import javafx.stage.Stage;
 
 public class MainApp extends Application {
 
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    MainController controller;
+
     @Override
     public void start(Stage primaryStage) {
         DiskScannerService service = new DiskScannerService(new FileSystemScanner());
         MainView view = new MainView();
-        MainController controller = new MainController(service, view, primaryStage);
+        this.controller = new MainController(service, view, primaryStage);
 
         controller.init(); // configure listeners
         view.show(primaryStage); // build scene and show
@@ -22,6 +28,7 @@ public class MainApp extends Application {
     @Override
     public void stop() {
         System.out.println("Closing app...");
-        // Ton shutdown ici
+        controller.shutdown();
     }
+
 }

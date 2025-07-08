@@ -2,13 +2,11 @@ package fr.app.infrastructure;
 
 import fr.app.domain.DiskScanner;
 import fr.app.domain.FileNode;
+import fr.app.utils.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import fr.app.utils.Logger;
 
 public class FileSystemScanner implements DiskScanner {
 
@@ -21,7 +19,6 @@ public class FileSystemScanner implements DiskScanner {
     private FileNode scanRec(Path path) throws IOException {
         File file = path.toFile();
         long size = 0;
-
         FileNode node = new FileNode(file.getName(), path, 0);
 
         if (file.isDirectory()) {
@@ -35,11 +32,15 @@ public class FileSystemScanner implements DiskScanner {
                 size += childNode.getSize();
                 Logger.info("Scanned: " + child.getName() + " - Size: " + childNode.getSize());
             }
+            // Calcule le pourcentage pour chaque enfant
+            for (FileNode child : node.getChildren()) {
+                double percent = size == 0 ? 0.0 : (double) child.getSize() / size;
+                child.setPercentage(percent);
+            }
         } else {
             size = file.length();
         }
         node.setSize(size);
         return node;
     }
-
 }

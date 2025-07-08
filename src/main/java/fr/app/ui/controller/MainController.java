@@ -2,9 +2,9 @@ package fr.app.ui.controller;
 
 import fr.app.application.DiskScannerService;
 import fr.app.domain.FileNode;
+import fr.app.ui.model.FileNodeTreeCell;
 import fr.app.ui.view.MainView;
 import fr.app.ui.view.TreemapDrawer;
-import fr.app.utils.SizeFormatter;
 import javafx.application.Platform;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -33,8 +33,11 @@ public class MainController {
 
     public void init() {
         view.pathField.setText(selectedPath);
-        view.chooseFolderButton.setOnAction(e -> openDirectoryChooser());
+        view.chooseButton.setOnAction(e -> openDirectoryChooser());
         view.scanButton.setOnAction(e -> startScan());
+
+        // ✅ Applique la TreeCell custom une seule fois !
+        view.treeView.setCellFactory(tv -> new FileNodeTreeCell());
     }
 
     private void openDirectoryChooser() {
@@ -60,15 +63,20 @@ public class MainController {
     }
 
     private void updateTreeView(FileNode rootNode) {
-        TreeItem<String> rootItem = new TreeItem<>(rootNode.getName() + " (" + SizeFormatter.format(rootNode.getSize()) + ")");
+        TreeItem<FileNode> rootItem = new TreeItem<>(rootNode);
         buildTree(rootNode, rootItem);
         view.treeView.setRoot(rootItem);
     }
 
-    private void buildTree(FileNode node, TreeItem<String> parentItem) {
+    private void buildTree(FileNode node, TreeItem<FileNode> parentItem) {
         if (node.getChildren() != null) {
-            for (FileNode child : node.getChildren()) {
-                TreeItem<String> childItem = new TreeItem<>(child.getName() + " (" + SizeFormatter.format(child.getSize()) + ")");
+            // Tri par taille décroissante
+            List<FileNode> sortedChildren = node.getChildren().stream()
+                    .sorted((a, b) -> Long.compare(b.getSize(), a.getSize()))
+                    .toList();
+
+            for (FileNode child : sortedChildren) {
+                TreeItem<FileNode> childItem = new TreeItem<>(child);
                 parentItem.getChildren().add(childItem);
                 buildTree(child, childItem);
             }
@@ -78,7 +86,6 @@ public class MainController {
     private void drawTreemap(FileNode root) {
         Canvas canvas = view.getTreemapCanvas();
         GraphicsContext gc = canvas.getGraphicsContext2D();
-
         treemapDrawer.drawTreemap(gc, treemapDrawer.buildTreemap(root, 0, 0, (float) canvas.getWidth(), (float) canvas.getHeight()));
     }
 

@@ -21,6 +21,15 @@ javafx {
     modules = [ 'javafx.controls', 'javafx.fxml' ] // FXML optionnel
 }
 
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'fr.app.ui.MainApp' // Remplace par ton package et ta classe Main
+        )
+    }
+}
+
 dependencies {
     // Ajoute ici d'autres libs si besoin
 }

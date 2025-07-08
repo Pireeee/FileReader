@@ -9,6 +9,7 @@ public class FileNode {
     private final Path path;
     private long size;
     private final List<FileNode> children;
+    private double percentage;
 
     public FileNode(String name, Path path, long size) {
         this.name = name;
@@ -44,5 +45,13 @@ public class FileNode {
 
     public void setSize(long size) {
         this.size = size;
+    }
+
+    public double getPercentage() { return percentage; }
+    public void setPercentage(double percentage) {
+        if (percentage < 0 || percentage > 100) {
+            throw new IllegalArgumentException("Percentage must be between 0 and 100");
+        }
+        this.percentage = percentage;
     }
 }
