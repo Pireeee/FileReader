@@ -6,12 +6,15 @@ import fr.app.ui.view.MainView;
 import fr.app.ui.view.TreemapDrawer;
 import fr.app.utils.SizeFormatter;
 import javafx.application.Platform;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.TreeItem;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 
 public class MainController {
 
@@ -51,8 +54,7 @@ public class MainController {
 
     private void onScanComplete(FileNode rootNode) {
         Platform.runLater(() -> {
-            view.treemapPane.getChildren().clear();
-            treemapDrawer.drawTreemap(view.treemapPane, rootNode);
+            drawTreemap(rootNode);
             updateTreeView(rootNode);
         });
     }
@@ -66,12 +68,18 @@ public class MainController {
     private void buildTree(FileNode node, TreeItem<String> parentItem) {
         if (node.getChildren() != null) {
             for (FileNode child : node.getChildren()) {
-
                 TreeItem<String> childItem = new TreeItem<>(child.getName() + " (" + SizeFormatter.format(child.getSize()) + ")");
                 parentItem.getChildren().add(childItem);
                 buildTree(child, childItem);
             }
         }
+    }
+
+    private void drawTreemap(FileNode root) {
+        Canvas canvas = view.getTreemapCanvas();
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+
+        treemapDrawer.drawTreemap(gc, treemapDrawer.buildTreemap(root, 0, 0, (float) canvas.getWidth(), (float) canvas.getHeight()));
     }
 
     public void shutdown() {

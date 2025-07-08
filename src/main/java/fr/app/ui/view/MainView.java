@@ -1,17 +1,18 @@
 package fr.app.ui.view;
 
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-public class MainView {
+public class MainView extends AnchorPane{
 
     public final Button scanButton = new Button("Scan Disk");
     public final Button chooseFolderButton = new Button("Select Path");
     public final TextField pathField = new TextField();
     public final TreeView<String> treeView = new TreeView<>();
-    public final Pane treemapPane = new Pane();
+    private final Canvas treemapCanvas = new Canvas(800, 600);
 
     private static final Integer SCENE_WIDTH = 1024;
     private static final Integer SCENE_HEIGHT = 768;
@@ -33,11 +34,9 @@ public class MainView {
         sidebar.setPrefWidth(SIDEBAR_WIDTH);
         VBox.setVgrow(treeView, Priority.ALWAYS); // Allow TreeView to grow
 
-        treemapPane.setPrefSize(800, 600);
-        treemapPane.setScaleShape(true);
-        VBox.setVgrow(treemapPane, Priority.ALWAYS); // Allow Pane to grow
+        VBox.setVgrow(treemapCanvas, Priority.ALWAYS); // Allow Canvas to grow
 
-        VBox mainContainer = new VBox(10, pathField, treemapPane);
+        VBox mainContainer = new VBox(10, pathField, treemapCanvas);
         HBox root = new HBox(sidebar, mainContainer);
         HBox.setHgrow(mainContainer, Priority.ALWAYS); // Allow main container to grow
 
@@ -45,5 +44,9 @@ public class MainView {
         stage.setScene(scene);
         stage.setTitle("Disk Space Analyzer");
         stage.show();
+    }
+
+    public Canvas getTreemapCanvas() {
+        return treemapCanvas;
     }
 }
