@@ -8,7 +8,7 @@ package fr.app.ui.view.squarify;
  */
 public class SquarifyRect {
 	private float x, y, dx, dy, value;
-	private String id; // ← c’est maintenant un String
+	private String id;
 
 	public SquarifyRect(float x, float y, float dx, float dy, String id, float value) {
 		this.x = x;
@@ -31,5 +31,5 @@ public class SquarifyRect {
 	public float getDx() { return dx; }
 	public float getDy() { return dy; }
 	public float getValue() { return value; }
-	public String getId() { return id; } // ← maintenant ça retourne bien ton nom
+	public String getId() { return id; }
 }

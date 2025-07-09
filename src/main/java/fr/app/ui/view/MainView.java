@@ -1,55 +1,33 @@
 package fr.app.ui.view;
 
-import fr.app.domain.FileNode;
-import fr.app.ui.model.FileNodeTreeCell;
+import fr.app.ui.view.component.MainContainerComponent;
+import fr.app.ui.view.component.SidebarComponent;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-public class MainView extends AnchorPane{
-
-    public final Button scanButton = new Button("Scan Folder");
-    public final Button chooseButton = new Button("Choose Folder");
-    public final TextField pathField = new TextField();
-    public final TreeView<FileNode> treeView = new TreeView<>();
-    private final Canvas treemapCanvas = new Canvas(800, 600);
+public class MainView {
+    private final SidebarComponent sidebar = new SidebarComponent();
+    private final MainContainerComponent mainContainer = new MainContainerComponent();
 
     private static final Integer SCENE_WIDTH = 1024;
     private static final Integer SCENE_HEIGHT = 768;
-    private static final Integer SIDEBAR_WIDTH = 250;
-
-    public MainView() {
-        treeView.setPrefHeight(400);
-        treeView.setCellFactory(tv -> new FileNodeTreeCell());
-        scanButton.setStyle("-fx-font-size: 16px; -fx-padding: 10px; -fx-background-color: #4CAF50; -fx-text-fill: white;");
-        scanButton.setPrefWidth(SIDEBAR_WIDTH - 20);
-        chooseButton.setStyle("-fx-font-size: 16px; -fx-padding: 10px; -fx-background-color: #2196F3; -fx-text-fill: white;");
-        chooseButton.setPrefWidth(SIDEBAR_WIDTH - 20);
-        pathField.setEditable(false);
-        pathField.setStyle("-fx-font-size: 14px; -fx-padding: 5px; -fx-background-color: #ffffff; -fx-border-color: #cccccc;");
-        pathField.setPrefWidth(400);
-    }
 
     public void show(Stage stage) {
-        VBox sidebar = new VBox(10, chooseButton, scanButton, treeView);
-        sidebar.setPrefWidth(SIDEBAR_WIDTH);
-        VBox.setVgrow(treeView, Priority.ALWAYS); // Allow TreeView to grow
-
-        VBox.setVgrow(treemapCanvas, Priority.ALWAYS); // Allow Canvas to grow
-
-        VBox mainContainer = new VBox(10, pathField, treemapCanvas);
         HBox root = new HBox(sidebar, mainContainer);
-        HBox.setHgrow(mainContainer, Priority.ALWAYS); // Allow main container to grow
+        HBox.setHgrow(mainContainer, Priority.ALWAYS);
 
-        Scene scene = new Scene(root);
+        Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
         stage.setScene(scene);
         stage.setTitle("Disk Space Analyzer");
         stage.show();
     }
 
-    public Canvas getTreemapCanvas() {
-        return treemapCanvas;
+    public SidebarComponent getSidebar() {
+        return sidebar;
+    }
+
+    public MainContainerComponent getMainContainer() {
+        return mainContainer;
     }
 }
