@@ -29,7 +29,6 @@ public class SidebarComponent extends VBox {
 
         treeView.getStyleClass().add("tree-view");
         treeView.setCellFactory(tv -> new FileNodeTreeCell());
-        treeView.setShowRoot(false);
         setVgrow(treeView, Priority.ALWAYS);
 
         getChildren().addAll(title, chooseButton, scanButton, treeView);

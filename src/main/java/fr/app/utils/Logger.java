@@ -11,23 +11,28 @@ public class Logger {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static void info(String message) {
-        log("INFO", message, null);
+        log("INFO", addThreadInfo(message), null);
     }
 
     public static void warn(String message) {
-        log("WARN", message, null);
+        log("WARN", addThreadInfo(message), null);
     }
 
     public static void error(String message) {
-        log("ERROR", message, null);
+        log("ERROR", addThreadInfo(message), null);
     }
 
     public static void error(String message, Throwable throwable) {
-        log("ERROR", message, throwable);
+        log("ERROR", addThreadInfo(message), throwable);
     }
 
     public static void debug(String message) {
-        log("DEBUG", message, null);
+        log("DEBUG", addThreadInfo(message), null);
+    }
+
+    private static String addThreadInfo(String message) {
+        String threadName = Thread.currentThread().getName();
+        return "[Thread=" + threadName + "] " + message;
     }
 
     private static void log(String level, String message, Throwable throwable) {

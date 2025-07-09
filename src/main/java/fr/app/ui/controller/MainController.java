@@ -32,6 +32,7 @@ public class MainController {
     private final ProgressComponent progressComponent;
     private final SidebarComponent sidebarComponent;
     private final TreemapComponent treemapComponent;
+    private long totalFilesCount = 0;
 
     private String selectedPath = "C:/Users/pierr/OneDrive/Documents/Cours/Master2/FileReader";
 
@@ -66,14 +67,31 @@ public class MainController {
         Path rootPath = Path.of(selectedPath);
 
         progressComponent.progressBar.setProgress(0);
+        progressComponent.filesScannedCountLabel.setText("0");
+        progressComponent.durationValueLabel.setText("");
+
+        progressComponent.startTimer();
 
         diskScannerService.scan(
                 rootPath,
+
                 progressInfo -> Platform.runLater(() -> {
                     progressComponent.progressBar.setProgress(progressInfo.getProgress());
-                    progressComponent.filesScannedCountLabel.setText(progressInfo.getFilesScanned() + "");
+                    progressComponent.filesScannedCountLabel.setText(
+                            String.format("%d/%d", progressInfo.getFilesScanned(), progressInfo.getTotalElements())
+                    );
                 }),
+
+                countingProgress -> Platform.runLater(() -> {
+                    double est = countingProgress * 200_000;
+                    progressComponent.progressBar.setProgress(countingProgress);
+                    progressComponent.filesScannedCountLabel.setText(
+                            String.format("~%d discovered", Math.round(est))
+                    );
+                }),
+
                 scanResult -> Platform.runLater(() -> onScanComplete(scanResult)),
+
                 error -> Platform.runLater(() -> onScanError(error))
         );
     }
@@ -82,13 +100,7 @@ public class MainController {
         drawTreemap(result.getRootNode());
         updateTreeView(result.getRootNode());
         progressComponent.progressBar.setProgress(1.0);
-        progressComponent.durationValueLabel.setText(durationFormat(result.getDuration().getSeconds()));
-    }
-
-    private String durationFormat(long seconds) {
-        long minutes = seconds / 60;
-        seconds = seconds % 60;
-        return String.format("%d min %d s", minutes, seconds);
+        progressComponent.stopTimer();
     }
 
     private void onScanError(Throwable error) {
@@ -100,6 +112,7 @@ public class MainController {
         alert.setContentText(error.getMessage());
         alert.showAndWait();
 
+        progressComponent.stopTimer();
         progressComponent.progressBar.setProgress(0);
     }
 

@@ -8,36 +8,34 @@ import fr.app.utils.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class FileSystemScanner implements DiskScanner {
 
-    private long totalFilesCount = 0;
-    private long scannedFilesCount = 0;
+    private final ForkJoinPool pool;
 
-    @Override
-    public ScanResult scan(Path root, Consumer<ProgressInfo> progressCallback) throws IOException {
-        totalFilesCount = countFiles(root);
-        scannedFilesCount = 0;
-        FileNode rootNode = new FileNode(root.getFileName().toString(), root, 0);
-        Instant startTime = Instant.now();
-        rootNode = scanRecursive(root, progress -> {
-            scannedFilesCount++;
-            double percent = totalFilesCount == 0 ? 0.0 : (double) scannedFilesCount / totalFilesCount;
-            progressCallback.accept(new ProgressInfo(percent, totalFilesCount));
-        });
-        Instant endTime = Instant.now();
-        return new ScanResult(rootNode, Duration.between(startTime, endTime));
+    public FileSystemScanner(ForkJoinPool pool) {
+        this.pool = pool;
     }
 
-    private long countFiles(Path path) {
+    public long countFiles(Path root, Consumer<Double> countingCallback) throws IOException {
+        long total = countFilesRecursive(root, countingCallback, new AtomicLong(0));
+        Logger.info("Comptage terminé : " + total + " fichiers.");
+        return total;
+    }
+
+    private long countFilesRecursive(Path path, Consumer<Double> countingCallback, AtomicLong counter) {
         File file = path.toFile();
         if (!file.exists()) return 0;
 
         if (file.isFile()) {
+            long c = counter.incrementAndGet();
+            countingCallback.accept(0.5 * (c / 100_000.0)); // progress approx pour phase 1
             return 1;
         }
 
@@ -45,42 +43,31 @@ public class FileSystemScanner implements DiskScanner {
         File[] files = file.listFiles();
         if (files != null) {
             for (File child : files) {
-                count += countFiles(child.toPath());
+                count += countFilesRecursive(child.toPath(), countingCallback, counter);
             }
         }
         return count;
     }
 
-    private FileNode scanRecursive(Path path, Consumer<Double> progressCallback) throws IOException {
-        File file = path.toFile();
-        long size = 0;
-        FileNode node = new FileNode(file.getName(), path, 0);
+    public ScanResult scan(Path root, Consumer<ProgressInfo> progressCallback, long totalFilesCount) throws IOException {
+        AtomicLong scannedFilesCount = new AtomicLong(0);
+        AtomicLong totalElementsCount = new AtomicLong(totalFilesCount);
 
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            if (files == null) {
-                throw new IOException("Impossible d'accéder au dossier : " + path);
-            }
-            for (File child : files) {
-                FileNode childNode = scanRecursive(child.toPath(), progressCallback);
-                node.addChild(childNode);
-                size += childNode.getSize();
-                Logger.info("Scanned: " + child.getName() + " - Size: " + childNode.getSize());
-            }
-            // Calcule le pourcentage pour chaque enfant
-            for (FileNode child : node.getChildren()) {
-                double percent = size == 0 ? 0.0 : (double) child.getSize() / size;
-                child.setPercentage(percent);
-            }
-        } else {
-            size = file.length();
+        FileNode rootNode = pool.invoke(new DirectoryScanTask(
+                root, this, progressCallback, totalFilesCount, scannedFilesCount, totalElementsCount
+        ));
+
+        return new ScanResult(rootNode);
+    }
+
+    FileNode createFileNode(File file) {
+        return new FileNode(file.getName(), file.toPath(), file.length());
+    }
+
+    void setChildrenPercentages(FileNode parent, long totalSize) {
+        for (FileNode child : parent.getChildren()) {
+            double percent = totalSize == 0 ? 0.0 : (double) child.getSize() / totalSize;
+            child.setPercentage(percent);
         }
-
-        // Mise à jour de la progression globale
-        scannedFilesCount++;
-        progressCallback.accept(scannedFilesCount / (double) totalFilesCount);
-
-        node.setSize(size);
-        return node;
     }
 }
