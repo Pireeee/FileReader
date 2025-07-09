@@ -45,6 +45,7 @@ public class MainController {
     }
 
     public void init() {
+        progressComponent.progressBar.getStyleClass().add("progress-bar");
         progressComponent.setPath(selectedPath);
         sidebarComponent.chooseButton.setOnAction(e -> openDirectoryChooser());
         sidebarComponent.scanButton.setOnAction(e -> startScan());

@@ -3,6 +3,8 @@ package fr.app.ui.view.component;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 public class ProgressComponent extends VBox {
@@ -11,12 +13,19 @@ public class ProgressComponent extends VBox {
 
     public ProgressComponent() {
         setSpacing(10);
+        getStyleClass().add("progress-component");
 
         pathField.setEditable(false);
-        pathField.setStyle("-fx-font-size: 14px; -fx-padding: 5px; -fx-background-color: #ffffff; -fx-border-color: #cccccc;");
-        pathField.setPrefWidth(400);
+        pathField.getStyleClass().add("path-field");
 
-        getChildren().addAll(pathField, new Label("Progress:"), progressBar);
+        progressBar.getStyleClass().add("progress-bar");
+        progressBar.setMaxWidth(Double.MAX_VALUE);
+
+        Label progressLabel = new Label("Progress :");
+        HBox progressBarContainer = new HBox(progressLabel, progressBar);
+        HBox.setHgrow(progressBar, Priority.ALWAYS);
+
+        getChildren().addAll(pathField, progressBarContainer);
     }
 
     public void setPath(String path) {
@@ -27,4 +36,3 @@ public class ProgressComponent extends VBox {
         progressBar.setProgress(progress);
     }
 }
-

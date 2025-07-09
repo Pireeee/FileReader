@@ -1,0 +1,80 @@
+/* === VARIABLES GLOBALES ===
+$primary-color: #4CAF50;
+$secondary-color: #9C27B0;
+$accent-color: #00BFA5;
+$background-color: #F5F5F5;
+$panel-bg: #DDDDDD;
+$text-color: #333333;
+$radius: 12px;
+$padding-standard: 20px;
+============================= */
+
+/* === Global === */
+.root {
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-font-size: 14px;
+    -fx-background-color: #F5F5F5; /* Couleur de fond globale */
+    -fx-text-fill: #333333;
+}
+
+/* === Sidebar === */
+.sidebar-component {
+    -fx-background-color: #DDDDDD; /* Fond gris clair */
+    -fx-border-color: #CCCCCC;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 15px;
+}
+
+.sidebar-component .button {
+    -fx-font-size: 16px;
+    -fx-text-fill: white;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+}
+
+.sidebar-component .button.scan-folder {
+    -fx-background-color: #4CAF50; /* Vert */
+}
+
+.sidebar-component .button.choose-folder {
+    -fx-background-color: #9C27B0; /* Violet/Rose */
+}
+
+.sidebar-component .tree-view {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CCCCCC;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+}
+
+/* === Progress === */
+.progress-component {
+    -fx-background-color: #DDDDDD;  /* Fond gris clair */
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 15px;
+}
+
+.progress-component .path-field {
+    -fx-font-size: 14px;
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: #333333;
+}
+
+.progress-bar {
+    -fx-accent: #4CAF50; /* Progress 100% vert */
+    -fx-background-insets: 0;
+}
+
+/* === Treemap === */
+.treemap-component {
+    -fx-background-color: #DDDDDD;  /* Même gris clair que Progress */
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+}
+
+.treemap-canvas {
+    -fx-background-color: transparent;
+}
