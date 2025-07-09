@@ -10,6 +10,10 @@ import javafx.scene.layout.VBox;
 public class ProgressComponent extends VBox {
     public final TextField pathField = new TextField();
     public final ProgressBar progressBar = new ProgressBar(0);
+    public final Label filesScannedLabel = new Label("Files scanned: ");
+    public final Label filesScannedCountLabel = new Label("0");
+    public final Label durationLabel = new Label("Duration: ");
+    public final Label durationValueLabel = new Label("0s");
 
     public ProgressComponent() {
         setSpacing(10);
@@ -25,7 +29,10 @@ public class ProgressComponent extends VBox {
         HBox progressBarContainer = new HBox(progressLabel, progressBar);
         HBox.setHgrow(progressBar, Priority.ALWAYS);
 
-        getChildren().addAll(pathField, progressBarContainer);
+        HBox filesScannedContainer = new HBox(filesScannedLabel, filesScannedCountLabel);
+        HBox durationContainer = new HBox(durationLabel, durationValueLabel);
+
+        getChildren().addAll(pathField, progressBarContainer, filesScannedContainer, durationContainer);
     }
 
     public void setPath(String path) {

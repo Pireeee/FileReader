@@ -2,6 +2,7 @@ package fr.app.ui.controller;
 
 import fr.app.application.DiskScannerService;
 import fr.app.domain.FileNode;
+import fr.app.domain.ScanResult;
 import fr.app.ui.model.FileNodeTreeCell;
 import fr.app.ui.view.MainView;
 import fr.app.ui.view.TreemapDrawer;
@@ -31,7 +32,6 @@ public class MainController {
     private final ProgressComponent progressComponent;
     private final SidebarComponent sidebarComponent;
     private final TreemapComponent treemapComponent;
-
 
     private String selectedPath = "C:/Users/pierr/OneDrive/Documents/Cours/Master2/FileReader";
 
@@ -65,20 +65,30 @@ public class MainController {
     private void startScan() {
         Path rootPath = Path.of(selectedPath);
 
-        progressComponent.progressBar.setProgress(0);  // Initialisation de la barre de progression
+        progressComponent.progressBar.setProgress(0);
 
         diskScannerService.scan(
                 rootPath,
-                progress -> Platform.runLater(() -> progressComponent.progressBar.setProgress(progress)),
-                rootNode -> Platform.runLater(() -> onScanComplete(rootNode)),
+                progressInfo -> Platform.runLater(() -> {
+                    progressComponent.progressBar.setProgress(progressInfo.getProgress());
+                    progressComponent.filesScannedCountLabel.setText(progressInfo.getFilesScanned() + "");
+                }),
+                scanResult -> Platform.runLater(() -> onScanComplete(scanResult)),
                 error -> Platform.runLater(() -> onScanError(error))
         );
     }
 
-    private void onScanComplete(FileNode rootNode) {
-        drawTreemap(rootNode);
-        updateTreeView(rootNode);
-        progressComponent.progressBar.setProgress(1.0);  // Barre à 100% à la fin
+    private void onScanComplete(ScanResult result) {
+        drawTreemap(result.getRootNode());
+        updateTreeView(result.getRootNode());
+        progressComponent.progressBar.setProgress(1.0);
+        progressComponent.durationValueLabel.setText(durationFormat(result.getDuration().getSeconds()));
+    }
+
+    private String durationFormat(long seconds) {
+        long minutes = seconds / 60;
+        seconds = seconds % 60;
+        return String.format("%d min %d s", minutes, seconds);
     }
 
     private void onScanError(Throwable error) {

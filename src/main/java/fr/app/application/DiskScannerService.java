@@ -1,7 +1,8 @@
 package fr.app.application;
 
 import fr.app.domain.DiskScanner;
-import fr.app.domain.FileNode;
+import fr.app.domain.ProgressInfo;
+import fr.app.domain.ScanResult;
 import fr.app.utils.Logger;
 
 import java.io.IOException;
@@ -23,8 +24,8 @@ public class DiskScannerService {
     }
 
     public void scan(Path rootPath,
-                     Consumer<Double> progressCallback,
-                     Consumer<FileNode> completionCallback,
+                     Consumer<ProgressInfo> progressCallback,
+                     Consumer<ScanResult> completionCallback,
                      Consumer<Throwable> errorCallback) {
 
         CompletableFuture

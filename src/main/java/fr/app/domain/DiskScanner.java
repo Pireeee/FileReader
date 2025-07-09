@@ -7,5 +7,5 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 
 public interface DiskScanner {
-    FileNode scan(Path root, Consumer<Double> progressCallBack) throws IOException;
+    ScanResult scan(Path rootPath, Consumer<ProgressInfo> progressCallback) throws IOException;
 }

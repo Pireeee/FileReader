@@ -2,11 +2,15 @@ package fr.app.infrastructure;
 
 import fr.app.domain.DiskScanner;
 import fr.app.domain.FileNode;
+import fr.app.domain.ProgressInfo;
+import fr.app.domain.ScanResult;
 import fr.app.utils.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.function.Consumer;
 
 public class FileSystemScanner implements DiskScanner {
@@ -15,10 +19,18 @@ public class FileSystemScanner implements DiskScanner {
     private long scannedFilesCount = 0;
 
     @Override
-    public FileNode scan(Path root, Consumer<Double> progressCallback) throws IOException {
+    public ScanResult scan(Path root, Consumer<ProgressInfo> progressCallback) throws IOException {
         totalFilesCount = countFiles(root);
         scannedFilesCount = 0;
-        return scanRecursive(root, progressCallback);
+        FileNode rootNode = new FileNode(root.getFileName().toString(), root, 0);
+        Instant startTime = Instant.now();
+        rootNode = scanRecursive(root, progress -> {
+            scannedFilesCount++;
+            double percent = totalFilesCount == 0 ? 0.0 : (double) scannedFilesCount / totalFilesCount;
+            progressCallback.accept(new ProgressInfo(percent, totalFilesCount));
+        });
+        Instant endTime = Instant.now();
+        return new ScanResult(rootNode, Duration.between(startTime, endTime));
     }
 
     private long countFiles(Path path) {
