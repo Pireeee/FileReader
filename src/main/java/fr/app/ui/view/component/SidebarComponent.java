@@ -26,6 +26,7 @@ public class SidebarComponent extends VBox {
         scanButton.setMaxWidth(Double.MAX_VALUE);
 
         setVgrow(progressComponent, Priority.ALWAYS);
+        setVgrow(treemapComponent, Priority.ALWAYS);
 
         getChildren().addAll(title, chooseButton, scanButton, progressComponent, treemapComponent);
     }

@@ -118,7 +118,7 @@ public class MainController {
     private void drawTreemap(FileNode root) {
         Canvas canvas = treemapComponent.getCanvas();
         GraphicsContext gc = canvas.getGraphicsContext2D();
-        treemapDrawer.drawTreemap(gc, treemapDrawer.buildTreemap(root, 1, 1, (float) canvas.getWidth(), (float) canvas.getHeight()));
+        treemapDrawer.drawTreemap(gc, treemapDrawer.buildTreemap(root, 5, 5, (float) canvas.getWidth(), (float) canvas.getHeight()));
     }
 
     public void shutdown() {
