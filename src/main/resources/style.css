@@ -78,3 +78,15 @@ $padding-standard: 20px;
 .treemap-canvas {
     -fx-background-color: transparent;
 }
+
+.split-pane-divider {
+    -fx-background-color: #F5F5F5;
+    -fx-padding: 0 4px; /* Épaisseur horizontale de la poignée */
+    -fx-border-color: #F5F5F5; /* Bordure */
+    -fx-border-width: 0 0; /* Bordure gauche et droite */
+    -fx-background-insets: 0;
+}
+
+.split-pane {
+    -fx-padding: 0;
+}

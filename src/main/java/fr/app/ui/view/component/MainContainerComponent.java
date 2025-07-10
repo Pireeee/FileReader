@@ -1,6 +1,5 @@
 package fr.app.ui.view.component;
 
-import javafx.geometry.Insets;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 

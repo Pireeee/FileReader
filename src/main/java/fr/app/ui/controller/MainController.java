@@ -50,7 +50,6 @@ public class MainController {
         progressComponent.setPath(selectedPath);
         sidebarComponent.chooseButton.setOnAction(e -> openDirectoryChooser());
         sidebarComponent.scanButton.setOnAction(e -> startScan());
-        sidebarComponent.treeView.setCellFactory(tv -> new FileNodeTreeCell());
     }
 
     private void openDirectoryChooser() {
@@ -119,7 +118,7 @@ public class MainController {
     private void updateTreeView(FileNode rootNode) {
         TreeItem<FileNode> rootItem = new TreeItem<>(rootNode);
         buildTree(rootNode, rootItem);
-        sidebarComponent.treeView.setRoot(rootItem);
+        sidebarComponent.treeTableViewComponent.setRoot(rootItem);
     }
 
     private void buildTree(FileNode node, TreeItem<FileNode> parentItem) {
