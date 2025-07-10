@@ -9,7 +9,7 @@ public class SidebarComponent extends VBox {
     public final Text title = new Text("Pire's File Reader");
     public final Button chooseButton = new Button("Choose Folder");
     public final Button scanButton = new Button("Scan Folder");
-    public final ProgressComponent progressComponent = new ProgressComponent();
+    public final StatisticsComponent statisticsComponent = new StatisticsComponent();
     public final TreemapComponent treemapComponent = new TreemapComponent();
 
     public SidebarComponent() {
@@ -25,9 +25,9 @@ public class SidebarComponent extends VBox {
         scanButton.getStyleClass().addAll("button", "scan-folder");
         scanButton.setMaxWidth(Double.MAX_VALUE);
 
-        setVgrow(progressComponent, Priority.ALWAYS);
+        setVgrow(statisticsComponent, Priority.ALWAYS);
         setVgrow(treemapComponent, Priority.ALWAYS);
 
-        getChildren().addAll(title, chooseButton, scanButton, progressComponent, treemapComponent);
+        getChildren().addAll(title, chooseButton, scanButton, statisticsComponent, treemapComponent);
     }
 }

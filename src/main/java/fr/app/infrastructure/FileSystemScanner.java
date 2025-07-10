@@ -4,14 +4,11 @@ import fr.app.domain.DiskScanner;
 import fr.app.domain.FileNode;
 import fr.app.domain.ProgressInfo;
 import fr.app.domain.ScanResult;
-import fr.app.utils.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -23,17 +20,25 @@ public class FileSystemScanner implements DiskScanner {
         this.pool = pool;
     }
 
+    @Override
     public ScanResult scan(Path root, Consumer<ProgressInfo> progressCallback) throws IOException {
         AtomicLong scannedFilesCount = new AtomicLong(0);
-        AtomicLong totalElementsCount = new AtomicLong(1); // commence à 1 pour le root
+        AtomicLong scannedFoldersCount = new AtomicLong(0);
+        AtomicLong totalSizeBytes = new AtomicLong(0);
+        long startTimeNanos = System.nanoTime();
 
         FileNode rootNode = pool.invoke(new DirectoryScanTask(
-                root, this, progressCallback, scannedFilesCount, totalElementsCount
+                root,
+                this,
+                progressCallback,
+                scannedFilesCount,
+                scannedFoldersCount,
+                totalSizeBytes,
+                startTimeNanos
         ));
 
         return new ScanResult(rootNode);
     }
-
 
     FileNode createFileNode(File file) {
         return new FileNode(file.getName(), file.toPath(), file.length());

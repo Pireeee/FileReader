@@ -2,10 +2,11 @@ package fr.app.ui.controller;
 
 import fr.app.application.DiskScannerService;
 import fr.app.domain.FileNode;
+import fr.app.domain.ProgressInfo;
 import fr.app.domain.ScanResult;
 import fr.app.ui.view.MainView;
 import fr.app.ui.view.TreemapDrawer;
-import fr.app.ui.view.component.ProgressComponent;
+import fr.app.ui.view.component.StatisticsComponent;
 import fr.app.ui.view.component.SidebarComponent;
 import fr.app.ui.view.component.TreemapComponent;
 import fr.app.utils.Logger;
@@ -13,13 +14,13 @@ import javafx.application.Platform;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.TreeItem;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.util.List;
 
 public class MainController {
@@ -28,7 +29,7 @@ public class MainController {
     private final MainView view;
     private final Stage stage;
     private final TreemapDrawer treemapDrawer = new TreemapDrawer();
-    private final ProgressComponent progressComponent;
+    private final StatisticsComponent statisticsComponent;
     private final SidebarComponent sidebarComponent;
     private final TreemapComponent treemapComponent;
 
@@ -38,13 +39,13 @@ public class MainController {
         this.diskScannerService = diskScannerService;
         this.view = view;
         this.sidebarComponent = view.getSidebar();
-        this.progressComponent = sidebarComponent.progressComponent;
+        this.statisticsComponent = sidebarComponent.statisticsComponent;
         this.treemapComponent = sidebarComponent.treemapComponent;
         this.stage = stage;
     }
 
     public void init() {
-        progressComponent.setPath(selectedPath);
+        statisticsComponent.setPath(selectedPath);
         sidebarComponent.chooseButton.setOnAction(e -> openDirectoryChooser());
         sidebarComponent.scanButton.setOnAction(e -> startScan());
     }
@@ -55,22 +56,31 @@ public class MainController {
         File selectedDirectory = chooser.showDialog(stage);
         if (selectedDirectory != null) {
             selectedPath = selectedDirectory.getAbsolutePath();
-            progressComponent.setPath(selectedPath);
+            statisticsComponent.setPath(selectedPath);
         }
     }
 
     private void startScan() {
         Path rootPath = Path.of(selectedPath);
 
-        progressComponent.startTimer();
-
         diskScannerService.scan(
                 rootPath,
                 progressInfo -> Platform.runLater(() -> {
-                    long folders = progressInfo.getTotalElements() - progressInfo.getFilesScanned();
-                    long files = progressInfo.getFilesScanned();
-                    long totalSize = 0; // optionnel, tu peux calculer la taille cumulée
-                    progressComponent.updateStats(folders, files, totalSize, progressComponent.getStartTimeMillis());
+                    String foldersText = "Dossiers analysés : " + progressInfo.getFoldersScanned();
+                    String filesText = "Fichiers analysés : " + progressInfo.getFilesScanned();
+                    String sizeText = "Taille cumulée : " + progressInfo.getTotalSize();
+                    String filesSpeedText = "Vitesse fichiers : " + progressInfo.getScanSpeed();
+                    String bytesSpeedText = "Vitesse lecture : " + progressInfo.getBytesSpeed();
+                    String durationText = "Durée : " + progressInfo.getDurationFormatted();
+
+                    statisticsComponent.updateStats(
+                            foldersText,
+                            filesText,
+                            sizeText,
+                            filesSpeedText,
+                            bytesSpeedText,
+                            durationText
+                    );
                 }),
                 scanResult -> Platform.runLater(() -> onScanComplete(scanResult)),
                 error -> Platform.runLater(() -> onScanError(error))
@@ -80,19 +90,16 @@ public class MainController {
     private void onScanComplete(ScanResult result) {
         drawTreemap(result.getRootNode());
         updateTreeView(result.getRootNode());
-        progressComponent.stopTimer();
     }
 
     private void onScanError(Throwable error) {
         Logger.error("Erreur pendant le scan", error);
 
-        Alert alert = new Alert(AlertType.ERROR);
+        Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Erreur lors du scan");
         alert.setHeaderText("Une erreur est survenue pendant le scan");
         alert.setContentText(error.getMessage());
         alert.showAndWait();
-
-        progressComponent.stopTimer();
     }
 
     private void updateTreeView(FileNode rootNode) {

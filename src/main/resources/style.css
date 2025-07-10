@@ -48,19 +48,12 @@ $padding-standard: 20px;
     -fx-background-radius: 10px;
 }
 
-/* === Progress === */
-.progress-component {
+/* === statistics === */
+.statistics-component {
     -fx-background-color: #DDDDDD;  /* Fond gris clair */
     -fx-border-radius: 10px;
     -fx-background-radius: 10px;
     -fx-padding: 15px;
-}
-
-.progress-component .path-field {
-    -fx-font-size: 14px;
-    -fx-background-color: transparent;
-    -fx-border-width: 0;
-    -fx-text-fill: #333333;
 }
 
 .progress-bar {
