@@ -70,7 +70,7 @@ $padding-standard: 20px;
 
 /* === Treemap === */
 .treemap-component {
-    -fx-background-color: #DDDDDD;  /* Même gris clair que Progress */
+    -fx-background-color: #F5F5F5;  /* Même gris clair que Progress */
     -fx-border-radius: 10px;
     -fx-background-radius: 10px;
 }

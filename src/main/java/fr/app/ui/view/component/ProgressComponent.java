@@ -1,79 +1,72 @@
 package fr.app.ui.view.component;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 
 public class ProgressComponent extends VBox {
-    public final TextField pathField = new TextField();
-    public final ProgressBar progressBar = new ProgressBar(0);
-    public final Label filesScannedLabel = new Label("Files : ");
-    public final Label filesScannedCountLabel = new Label("0");
-    public final Label durationLabel = new Label("Duration: ");
-    public final Label durationValueLabel = new Label("0s");
 
-    private Timeline timer;
-    private long startTimeMillis = 0;
+    public final Label pathLabel = new Label();
+    public final Label foldersCountLabel = new Label("Dossiers analys\u00E9s : 0");
+    public final Label filesCountLabel = new Label("Fichiers analys\u00E9s : 0");
+    public final Label sizeTotalLabel = new Label("Taille cumul\u00E9e : 0 B");
+    public final Label speedLabel = new Label("Vitesse : 0 f/s");
+    public final Label durationLabel = new Label("Dur\u00E9e : 00:00");
+
+    private long startTimeMillis;
 
     public ProgressComponent() {
-        setSpacing(10);
+        this.setSpacing(10);
         getStyleClass().add("progress-component");
-
-        pathField.setEditable(false);
-        pathField.getStyleClass().add("path-field");
-
-        progressBar.getStyleClass().add("progress-bar");
-        progressBar.setMaxWidth(Double.MAX_VALUE);
-
-        Label progressLabel = new Label("Progress :");
-        HBox progressBarContainer = new HBox(progressLabel, progressBar);
-        HBox.setHgrow(progressBar, Priority.ALWAYS);
-
-        HBox filesScannedContainer = new HBox(filesScannedLabel, filesScannedCountLabel);
-        HBox durationContainer = new HBox(durationLabel, durationValueLabel);
-
-        getChildren().addAll(pathField, progressBarContainer, filesScannedContainer, durationContainer);
-    }
-
-    public void startTimer() {
-        stopTimer();
-        startTimeMillis = System.currentTimeMillis();
-
-        timer = new Timeline(new KeyFrame(Duration.millis(100), e -> {
-            long elapsedMillis = System.currentTimeMillis() - startTimeMillis;
-            durationValueLabel.setText(formatDurationMillis(elapsedMillis));
-        }));
-        timer.setCycleCount(Timeline.INDEFINITE);
-        timer.play();
-    }
-
-    public void stopTimer() {
-        if (timer != null) {
-            timer.stop();
-            timer = null;
-        }
-    }
-
-    private String formatDurationMillis(long millis) {
-        long totalSeconds = millis / 1000;
-        long minutes = totalSeconds / 60;
-        long seconds = totalSeconds % 60;
-        long ms = millis % 1000;
-
-        return String.format("%dmin %02ds %03dms", minutes, seconds, ms);
+        this.getChildren().addAll(
+                pathLabel,
+                foldersCountLabel,
+                filesCountLabel,
+                sizeTotalLabel,
+                speedLabel,
+                durationLabel
+        );
     }
 
     public void setPath(String path) {
-        pathField.setText(path);
+        Platform.runLater(() -> pathLabel.setText("Chemin : " + path));
     }
 
-    public void setProgress(double progress) {
-        progressBar.setProgress(progress);
+    public void updateStats(long folders, long files, long totalSizeBytes, long startTimeMillis) {
+        long elapsedSeconds = Math.max((System.currentTimeMillis() - startTimeMillis) / 1000, 1);
+        double speed = files / (double) elapsedSeconds;
+
+        Platform.runLater(() -> {
+            foldersCountLabel.setText("Dossiers analys\u00E9s : " + folders);
+            filesCountLabel.setText("Fichiers analys\u00E9s : " + files);
+            sizeTotalLabel.setText("Taille cumul\u00E9e : " + formatSize(totalSizeBytes));
+            speedLabel.setText(String.format("Vitesse : %.2f f/s", speed));
+            durationLabel.setText("Dur\u00E9e : " + formatDuration(elapsedSeconds));
+        });
+    }
+
+    public void startTimer() {
+        startTimeMillis = System.currentTimeMillis();
+    }
+
+    public void stopTimer() {
+        // rien à faire ici si tu n’as pas besoin
+    }
+
+    private String formatSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        String unit = "KMGTPE".charAt(exp - 1) + "o";
+        return String.format("%.1f %s", bytes / Math.pow(1024, exp), unit);
+    }
+
+    private String formatDuration(long seconds) {
+        long mins = seconds / 60;
+        long secs = seconds % 60;
+        return String.format("%02d:%02d", mins, secs);
+    }
+
+    public long getStartTimeMillis() {
+        return startTimeMillis;
     }
 }

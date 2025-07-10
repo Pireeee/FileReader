@@ -3,7 +3,6 @@ package fr.app.ui.controller;
 import fr.app.application.DiskScannerService;
 import fr.app.domain.FileNode;
 import fr.app.domain.ScanResult;
-import fr.app.ui.model.FileNodeTreeCell;
 import fr.app.ui.view.MainView;
 import fr.app.ui.view.TreemapDrawer;
 import fr.app.ui.view.component.ProgressComponent;
@@ -32,21 +31,19 @@ public class MainController {
     private final ProgressComponent progressComponent;
     private final SidebarComponent sidebarComponent;
     private final TreemapComponent treemapComponent;
-    private long totalFilesCount = 0;
 
-    private String selectedPath = "C:/Users/pierr/OneDrive/Documents/Cours/Master2/FileReader";
+    private String selectedPath = "C:/Users/";
 
     public MainController(DiskScannerService diskScannerService, MainView view, Stage stage) {
         this.diskScannerService = diskScannerService;
         this.view = view;
-        this.progressComponent = view.getMainContainer().progressComponent;
         this.sidebarComponent = view.getSidebar();
-        this.treemapComponent = view.getMainContainer().treemapComponent;
+        this.progressComponent = sidebarComponent.progressComponent;
+        this.treemapComponent = sidebarComponent.treemapComponent;
         this.stage = stage;
     }
 
     public void init() {
-        progressComponent.progressBar.getStyleClass().add("progress-bar");
         progressComponent.setPath(selectedPath);
         sidebarComponent.chooseButton.setOnAction(e -> openDirectoryChooser());
         sidebarComponent.scanButton.setOnAction(e -> startScan());
@@ -58,39 +55,24 @@ public class MainController {
         File selectedDirectory = chooser.showDialog(stage);
         if (selectedDirectory != null) {
             selectedPath = selectedDirectory.getAbsolutePath();
-            progressComponent.pathField.setText(selectedPath);
+            progressComponent.setPath(selectedPath);
         }
     }
 
     private void startScan() {
         Path rootPath = Path.of(selectedPath);
 
-        progressComponent.progressBar.setProgress(0);
-        progressComponent.filesScannedCountLabel.setText("0");
-        progressComponent.durationValueLabel.setText("");
-
         progressComponent.startTimer();
 
         diskScannerService.scan(
                 rootPath,
-
                 progressInfo -> Platform.runLater(() -> {
-                    progressComponent.progressBar.setProgress(progressInfo.getProgress());
-                    progressComponent.filesScannedCountLabel.setText(
-                            String.format("%d/%d", progressInfo.getFilesScanned(), progressInfo.getTotalElements())
-                    );
+                    long folders = progressInfo.getTotalElements() - progressInfo.getFilesScanned();
+                    long files = progressInfo.getFilesScanned();
+                    long totalSize = 0; // optionnel, tu peux calculer la taille cumulée
+                    progressComponent.updateStats(folders, files, totalSize, progressComponent.getStartTimeMillis());
                 }),
-
-                countingProgress -> Platform.runLater(() -> {
-                    double est = countingProgress * 200_000;
-                    progressComponent.progressBar.setProgress(countingProgress);
-                    progressComponent.filesScannedCountLabel.setText(
-                            String.format("~%d discovered", Math.round(est))
-                    );
-                }),
-
                 scanResult -> Platform.runLater(() -> onScanComplete(scanResult)),
-
                 error -> Platform.runLater(() -> onScanError(error))
         );
     }
@@ -98,7 +80,6 @@ public class MainController {
     private void onScanComplete(ScanResult result) {
         drawTreemap(result.getRootNode());
         updateTreeView(result.getRootNode());
-        progressComponent.progressBar.setProgress(1.0);
         progressComponent.stopTimer();
     }
 
@@ -112,13 +93,12 @@ public class MainController {
         alert.showAndWait();
 
         progressComponent.stopTimer();
-        progressComponent.progressBar.setProgress(0);
     }
 
     private void updateTreeView(FileNode rootNode) {
         TreeItem<FileNode> rootItem = new TreeItem<>(rootNode);
         buildTree(rootNode, rootItem);
-        sidebarComponent.treeTableViewComponent.setRoot(rootItem);
+        view.getMainContainer().treeTableViewComponent.setRoot(rootItem);
     }
 
     private void buildTree(FileNode node, TreeItem<FileNode> parentItem) {
@@ -138,7 +118,7 @@ public class MainController {
     private void drawTreemap(FileNode root) {
         Canvas canvas = treemapComponent.getCanvas();
         GraphicsContext gc = canvas.getGraphicsContext2D();
-        treemapDrawer.drawTreemap(gc, treemapDrawer.buildTreemap(root, 0, 0, (float) canvas.getWidth(), (float) canvas.getHeight()));
+        treemapDrawer.drawTreemap(gc, treemapDrawer.buildTreemap(root, 1, 1, (float) canvas.getWidth(), (float) canvas.getHeight()));
     }
 
     public void shutdown() {

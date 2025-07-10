@@ -17,19 +17,17 @@ class DirectoryScanTask extends RecursiveTask<FileNode> {
     private final Path path;
     private final FileSystemScanner scanner;
     private final Consumer<ProgressInfo> progressCallback;
-    private final long totalFilesCount;
     private final AtomicLong scannedFilesCount;
     private final AtomicLong totalElementsCount;
 
     public DirectoryScanTask(Path path,
                              FileSystemScanner scanner,
                              Consumer<ProgressInfo> progressCallback,
-                             long totalFilesCount,
-                             AtomicLong scannedFilesCount,AtomicLong totalElementsCount) {
+                             AtomicLong scannedFilesCount,
+                             AtomicLong totalElementsCount) {
         this.path = path;
         this.scanner = scanner;
         this.progressCallback = progressCallback;
-        this.totalFilesCount = totalFilesCount;
         this.scannedFilesCount = scannedFilesCount;
         this.totalElementsCount = totalElementsCount;
     }
@@ -64,7 +62,7 @@ class DirectoryScanTask extends RecursiveTask<FileNode> {
             for (File child : files) {
                 if (child.isDirectory()) {
                     totalElementsCount.incrementAndGet();
-                    DirectoryScanTask subtask = new DirectoryScanTask(child.toPath(), scanner, progressCallback, totalFilesCount, scannedFilesCount, totalElementsCount);
+                    DirectoryScanTask subtask = new DirectoryScanTask(child.toPath(), scanner, progressCallback, scannedFilesCount, totalElementsCount);
                     subtask.fork();
                     subtasks.add(subtask);
                 } else {
@@ -95,8 +93,8 @@ class DirectoryScanTask extends RecursiveTask<FileNode> {
 
     private void updateProgress() {
         long scanned = scannedFilesCount.incrementAndGet();
-        long elements = totalElementsCount.get();
-        double percent = 0.5 + 0.5 * ((double) scanned / totalFilesCount);
-        progressCallback.accept(new ProgressInfo(percent, scanned, totalFilesCount, elements));
+        long total = totalElementsCount.get();
+        double percent = total == 0 ? 0.0 : (double) scanned / total;
+        progressCallback.accept(new ProgressInfo(percent, scanned, total, total));
     }
 }

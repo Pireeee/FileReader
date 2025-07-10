@@ -24,28 +24,17 @@ public class DiskScannerService {
 
     public void scan(Path rootPath,
                      Consumer<ProgressInfo> progressCallback,
-                     Consumer<Double> countingCallback,
                      Consumer<ScanResult> completionCallback,
                      Consumer<Throwable> errorCallback) {
 
         CompletableFuture
                 .supplyAsync(() -> {
                     try {
-                        return scanner.countFiles(rootPath, countingCallback);
+                        return scanner.scan(rootPath, progressCallback);
                     } catch (IOException e) {
                         throw new CompletionException(e);
                     }
                 }, executor)
-                .thenCompose(totalCount -> {
-                    Logger.info("Total files counted: " + totalCount);
-                    return CompletableFuture.supplyAsync(() -> {
-                        try {
-                            return scanner.scan(rootPath, progressCallback, totalCount);
-                        } catch (IOException e) {
-                            throw new CompletionException(e);
-                        }
-                    }, executor);
-                })
                 .thenAccept(completionCallback)
                 .exceptionally(ex -> {
                     Logger.error("Erreur durant le scan : " + ex.getMessage(), ex);

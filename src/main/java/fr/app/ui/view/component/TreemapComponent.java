@@ -14,7 +14,7 @@ public class TreemapComponent extends VBox {
         treemapCanvas.getStyleClass().add("treemap-canvas");
         widthProperty().addListener((obs, oldW, newW) -> treemapCanvas.setWidth(newW.doubleValue()-10));
         heightProperty().addListener((obs, oldH, newH) -> treemapCanvas.setHeight(newH.doubleValue()-10));
-        //getChildren().add(treemapCanvas);
+        getChildren().add(treemapCanvas);
         setVgrow(treemapCanvas, Priority.ALWAYS);
     }
 

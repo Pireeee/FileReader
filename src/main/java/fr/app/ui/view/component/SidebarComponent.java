@@ -9,7 +9,8 @@ public class SidebarComponent extends VBox {
     public final Text title = new Text("Pire's File Reader");
     public final Button chooseButton = new Button("Choose Folder");
     public final Button scanButton = new Button("Scan Folder");
-    public final FileNodeTreeTableViewComponent treeTableViewComponent = new FileNodeTreeTableViewComponent();
+    public final ProgressComponent progressComponent = new ProgressComponent();
+    public final TreemapComponent treemapComponent = new TreemapComponent();
 
     public SidebarComponent() {
         setSpacing(10);
@@ -24,8 +25,8 @@ public class SidebarComponent extends VBox {
         scanButton.getStyleClass().addAll("button", "scan-folder");
         scanButton.setMaxWidth(Double.MAX_VALUE);
 
-        setVgrow(treeTableViewComponent, Priority.ALWAYS);
+        setVgrow(progressComponent, Priority.ALWAYS);
 
-        getChildren().addAll(title, chooseButton, scanButton, treeTableViewComponent);
+        getChildren().addAll(title, chooseButton, scanButton, progressComponent, treemapComponent);
     }
 }

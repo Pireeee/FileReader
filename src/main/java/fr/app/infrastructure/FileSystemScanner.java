@@ -23,42 +23,17 @@ public class FileSystemScanner implements DiskScanner {
         this.pool = pool;
     }
 
-    public long countFiles(Path root, Consumer<Double> countingCallback) throws IOException {
-        long total = countFilesRecursive(root, countingCallback, new AtomicLong(0));
-        Logger.info("Comptage terminé : " + total + " fichiers.");
-        return total;
-    }
-
-    private long countFilesRecursive(Path path, Consumer<Double> countingCallback, AtomicLong counter) {
-        File file = path.toFile();
-        if (!file.exists()) return 0;
-
-        if (file.isFile()) {
-            long c = counter.incrementAndGet();
-            countingCallback.accept(0.5 * (c / 100_000.0)); // progress approx pour phase 1
-            return 1;
-        }
-
-        long count = 0;
-        File[] files = file.listFiles();
-        if (files != null) {
-            for (File child : files) {
-                count += countFilesRecursive(child.toPath(), countingCallback, counter);
-            }
-        }
-        return count;
-    }
-
-    public ScanResult scan(Path root, Consumer<ProgressInfo> progressCallback, long totalFilesCount) throws IOException {
+    public ScanResult scan(Path root, Consumer<ProgressInfo> progressCallback) throws IOException {
         AtomicLong scannedFilesCount = new AtomicLong(0);
-        AtomicLong totalElementsCount = new AtomicLong(totalFilesCount);
+        AtomicLong totalElementsCount = new AtomicLong(1); // commence à 1 pour le root
 
         FileNode rootNode = pool.invoke(new DirectoryScanTask(
-                root, this, progressCallback, totalFilesCount, scannedFilesCount, totalElementsCount
+                root, this, progressCallback, scannedFilesCount, totalElementsCount
         ));
 
         return new ScanResult(rootNode);
     }
+
 
     FileNode createFileNode(File file) {
         return new FileNode(file.getName(), file.toPath(), file.length());
