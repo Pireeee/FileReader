@@ -22,32 +22,18 @@ public class FileSystemScanner implements DiskScanner {
 
     @Override
     public ScanResult scan(Path root, Consumer<ProgressInfo> progressCallback) throws IOException {
-        AtomicLong scannedFilesCount = new AtomicLong(0);
-        AtomicLong scannedFoldersCount = new AtomicLong(0);
-        AtomicLong totalSizeBytes = new AtomicLong(0);
         long startTimeNanos = System.nanoTime();
-
-        FileNode rootNode = pool.invoke(new DirectoryScanTask(
+        ProgressReporter reporter = new ProgressReporter(progressCallback, startTimeNanos);
+        FileNodeFactory nodeFactory = new FileNodeFactory();
+        DirectoryScanTask scanTask = new DirectoryScanTask(
                 root,
                 this,
-                progressCallback,
-                scannedFilesCount,
-                scannedFoldersCount,
-                totalSizeBytes,
-                startTimeNanos
-        ));
+                nodeFactory,
+                reporter
+        );
+        FileNode rootNode = pool.invoke(scanTask);
 
         return new ScanResult(rootNode);
     }
 
-    FileNode createFileNode(File file) {
-        return new FileNode(file.getName(), file.toPath(), file.length());
-    }
-
-    void setChildrenPercentages(FileNode parent, long totalSize) {
-        for (FileNode child : parent.getChildren()) {
-            double percent = totalSize == 0 ? 0.0 : (double) child.getSize() / totalSize;
-            child.setPercentage(percent);
-        }
-    }
 }

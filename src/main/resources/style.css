@@ -83,3 +83,9 @@ $padding-standard: 20px;
 .split-pane {
     -fx-padding: 0;
 }
+
+.percent-column{
+    -fx-alignment: CENTER_RIGHT;
+    -fx-text-fill: black; /* Couleur du texte */
+    -fx-font-weight: bold;
+}

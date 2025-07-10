@@ -106,6 +106,7 @@ public class MainController {
         TreeItem<FileNode> rootItem = new TreeItem<>(rootNode);
         buildTree(rootNode, rootItem);
         view.getMainContainer().treeTableViewComponent.setRoot(rootItem);
+        view.getMainContainer().treeTableViewComponent.setShowRoot(true);
     }
 
     private void buildTree(FileNode node, TreeItem<FileNode> parentItem) {
