@@ -16,32 +16,57 @@ public class DonutChartDrawer {
     private static final double RING_THICKNESS = 40;
     private static final double MIN_ROUND_CAP_DEGREES = 8;
 
+    private static final int MIN_CATEGORIES = 3;
+    private static final int MAX_CATEGORIES = 7;
+    private static final double COVERAGE_THRESHOLD = 0.90;
+
     private static final Color[] PALETTE = {
             Color.web("#9C27B0"), // purple
             Color.web("#4CAF50"), // green
             Color.web("#2E9BB5"), // teal/blue
             Color.web("#D9A441"), // gold
+            Color.web("#E4572E"), // orange-red
+            Color.web("#3F51B5"), // indigo
+            Color.web("#00897B"), // dark teal
     };
     private static final Color OTHER_COLOR = Color.web("#9E9E9E"); // gray
 
-    public List<CategorySlice> buildSlices(FileNode root, int maxCategories) {
+    /**
+     * Picks the biggest top-level entries (3 to 7, by real scanned size) and folds
+     * everything past that into a single trailing "Other" slice.
+     */
+    public List<CategorySlice> buildSlices(FileNode root) {
         List<CategorySlice> slices = new ArrayList<>();
         if (root == null || root.getChildren() == null || root.getChildren().isEmpty()) {
             return slices;
         }
 
         List<FileNode> sorted = root.getChildren().stream()
+                .filter(node -> node.getSize() > 0)
                 .sorted(Comparator.comparingLong(FileNode::getSize).reversed())
                 .toList();
+        if (sorted.isEmpty()) {
+            return slices;
+        }
 
-        int topCount = Math.min(maxCategories, sorted.size());
-        for (int i = 0; i < topCount; i++) {
+        long total = sorted.stream().mapToLong(FileNode::getSize).sum();
+
+        int individualCount = 0;
+        long cumulative = 0;
+        for (FileNode node : sorted) {
+            if (individualCount >= MAX_CATEGORIES) break;
+            if (individualCount >= MIN_CATEGORIES && cumulative >= total * COVERAGE_THRESHOLD) break;
+            cumulative += node.getSize();
+            individualCount++;
+        }
+
+        for (int i = 0; i < individualCount; i++) {
             FileNode node = sorted.get(i);
             slices.add(new CategorySlice(node.getName(), node.getSize(), 1, PALETTE[i % PALETTE.length]));
         }
 
-        if (sorted.size() > topCount) {
-            List<FileNode> rest = sorted.subList(topCount, sorted.size());
+        if (sorted.size() > individualCount) {
+            List<FileNode> rest = sorted.subList(individualCount, sorted.size());
             long otherSize = rest.stream().mapToLong(FileNode::getSize).sum();
             slices.add(new CategorySlice("Other (" + rest.size() + " items)", otherSize, rest.size(), OTHER_COLOR));
         }

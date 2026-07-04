@@ -1,6 +1,5 @@
 package fr.app.ui.view.component;
 
-import fr.app.domain.FileNode;
 import fr.app.ui.view.CategorySlice;
 import fr.app.ui.view.DonutChartDrawer;
 import fr.app.utils.SizeFormatter;
@@ -42,9 +41,8 @@ public class DonutChartComponent extends StackPane {
         getChildren().addAll(canvas, centerBox);
     }
 
-    public void update(FileNode root, int maxCategories, long totalFiles, long totalFolders) {
-        currentSlices = drawer.buildSlices(root, maxCategories);
-        long totalBytes = root != null ? root.getSize() : 0;
+    public void update(List<CategorySlice> slices, long totalBytes, long totalFiles, long totalFolders) {
+        currentSlices = slices;
         totalLabel.setText(SizeFormatter.format(totalBytes));
         subLabel.setText(String.format("%,d files · %,d folders", totalFiles, totalFolders));
         redraw();

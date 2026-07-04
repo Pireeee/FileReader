@@ -11,7 +11,7 @@ public class SidebarComponent extends VBox {
     public final Button scanButton = new Button("Scan Folder");
     public final StatisticsComponent statisticsComponent = new StatisticsComponent();
     public final DonutChartComponent donutChartComponent = new DonutChartComponent();
-    public final TreemapComponent treemapComponent = new TreemapComponent();
+    public final CategoryLegendComponent categoryLegendComponent = new CategoryLegendComponent();
 
     public SidebarComponent() {
         setSpacing(10);
@@ -29,8 +29,7 @@ public class SidebarComponent extends VBox {
         donutChartComponent.setPrefSize(200, 200);
         setVgrow(donutChartComponent, Priority.ALWAYS);
         setVgrow(statisticsComponent, Priority.ALWAYS);
-        setVgrow(treemapComponent, Priority.ALWAYS);
 
-        getChildren().addAll(title, chooseButton, scanButton, donutChartComponent, statisticsComponent, treemapComponent);
+        getChildren().addAll(title, chooseButton, scanButton, donutChartComponent, categoryLegendComponent, statisticsComponent);
     }
 }

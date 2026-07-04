@@ -80,15 +80,50 @@ $padding-standard: 20px;
     -fx-text-fill: #777777;
 }
 
-/* === Treemap === */
-.treemap-component {
-    -fx-background-color: #F5F5F5;  /* Même gris clair que Progress */
-    -fx-border-radius: 10px;
-    -fx-background-radius: 10px;
+/* === Category legend === */
+.category-legend-component {
+    -fx-padding: 10px 0 0 0;
 }
 
-.treemap-canvas {
-    -fx-background-color: transparent;
+.legend-row {
+    -fx-padding: 2px 0;
+}
+
+.legend-name {
+    -fx-font-size: 13px;
+    -fx-text-fill: #333333;
+}
+
+.legend-size {
+    -fx-font-size: 12px;
+    -fx-text-fill: #555555;
+}
+
+.legend-percent {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+.legend-bar {
+    -fx-pref-height: 6px;
+}
+
+.legend-bar > .track {
+    -fx-background-radius: 3px;
+    -fx-background-color: #E0E0E0;
+}
+
+.legend-bar > .bar {
+    -fx-background-radius: 3px;
+    -fx-background-insets: 0;
+    -fx-padding: 3px;
+}
+
+/* === Scan summary === */
+.scan-summary-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #555555;
 }
 
 .split-pane-divider {
