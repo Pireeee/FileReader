@@ -6,6 +6,7 @@ import fr.app.domain.ProgressInfo;
 import fr.app.domain.ScanResult;
 import fr.app.ui.view.MainView;
 import fr.app.ui.view.TreemapDrawer;
+import fr.app.ui.view.component.DonutChartComponent;
 import fr.app.ui.view.component.StatisticsComponent;
 import fr.app.ui.view.component.SidebarComponent;
 import fr.app.ui.view.component.TreemapComponent;
@@ -32,6 +33,9 @@ public class MainController {
     private final StatisticsComponent statisticsComponent;
     private final SidebarComponent sidebarComponent;
     private final TreemapComponent treemapComponent;
+    private final DonutChartComponent donutChartComponent;
+
+    private static final int DONUT_MAX_CATEGORIES = 4;
 
     private String selectedPath = "C:/Users/";
 
@@ -41,6 +45,7 @@ public class MainController {
         this.sidebarComponent = view.getSidebar();
         this.statisticsComponent = sidebarComponent.statisticsComponent;
         this.treemapComponent = sidebarComponent.treemapComponent;
+        this.donutChartComponent = sidebarComponent.donutChartComponent;
         this.stage = stage;
     }
 
@@ -90,6 +95,32 @@ public class MainController {
     private void onScanComplete(ScanResult result) {
         drawTreemap(result.getRootNode());
         updateTreeView(result.getRootNode());
+        updateDonutChart(result.getRootNode());
+    }
+
+    private void updateDonutChart(FileNode root) {
+        NodeCounts counts = countNodes(root);
+        donutChartComponent.update(root, DONUT_MAX_CATEGORIES, counts.files(), counts.folders());
+    }
+
+    private record NodeCounts(long files, long folders) {}
+
+    private NodeCounts countNodes(FileNode node) {
+        long files = 0;
+        long folders = 0;
+        if (node.getChildren() != null) {
+            for (FileNode child : node.getChildren()) {
+                if (child.isDirectory()) {
+                    folders++;
+                } else {
+                    files++;
+                }
+                NodeCounts childCounts = countNodes(child);
+                files += childCounts.files();
+                folders += childCounts.folders();
+            }
+        }
+        return new NodeCounts(files, folders);
     }
 
     private void onScanError(Throwable error) {

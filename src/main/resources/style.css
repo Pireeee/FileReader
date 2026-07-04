@@ -61,6 +61,25 @@ $padding-standard: 20px;
     -fx-background-insets: 0;
 }
 
+/* === Donut chart === */
+.donut-chart-component {
+    -fx-background-color: #F5F5F5;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-min-height: 180px;
+}
+
+.donut-total-label {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+.donut-sub-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #777777;
+}
+
 /* === Treemap === */
 .treemap-component {
     -fx-background-color: #F5F5F5;  /* Même gris clair que Progress */
