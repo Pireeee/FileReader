@@ -7,46 +7,22 @@ import javafx.scene.layout.VBox;
 public class StatisticsComponent extends VBox {
 
     public final Label pathLabel = new Label();
-    public final Label foldersCountLabel = new Label("Dossiers analysés : 0");
-    public final Label filesCountLabel = new Label("Fichiers analysés : 0");
-    public final Label sizeTotalLabel = new Label("Taille cumulée : 0 B");
-    public final Label filesSpeedLabel = new Label("Vitesse fichiers : 0 f/s");
-    public final Label bytesSpeedLabel = new Label("Vitesse lecture : 0 B/s");
-    public final Label durationLabel = new Label("Durée : 00:00:00");
+    public final Label scanSummaryLabel = new Label("Scan: 0:00.000   0 files/s   0 B/s");
 
     public StatisticsComponent() {
-        this.setSpacing(10);
+        this.setSpacing(6);
         getStyleClass().add("statistics-component");
-        this.getChildren().addAll(
-                pathLabel,
-                foldersCountLabel,
-                filesCountLabel,
-                sizeTotalLabel,
-                filesSpeedLabel,
-                bytesSpeedLabel,
-                durationLabel
-        );
+        scanSummaryLabel.getStyleClass().add("scan-summary-label");
+        this.getChildren().addAll(pathLabel, scanSummaryLabel);
     }
 
     public void setPath(String path) {
         Platform.runLater(() -> pathLabel.setText("Chemin : " + path));
     }
 
-    public void updateStats(
-            String foldersText,
-            String filesText,
-            String sizeText,
-            String filesSpeedText,
-            String bytesSpeedText,
-            String durationText
-    ) {
-        Platform.runLater(() -> {
-            foldersCountLabel.setText(foldersText);
-            filesCountLabel.setText(filesText);
-            sizeTotalLabel.setText(sizeText);
-            filesSpeedLabel.setText(filesSpeedText);
-            bytesSpeedLabel.setText(bytesSpeedText);
-            durationLabel.setText(durationText);
-        });
+    public void updateStats(String durationText, String filesSpeedText, String bytesSpeedText) {
+        Platform.runLater(() ->
+                scanSummaryLabel.setText(String.format("Scan: %s   %s   %s", durationText, filesSpeedText, bytesSpeedText))
+        );
     }
 }

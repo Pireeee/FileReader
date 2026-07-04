@@ -4,15 +4,15 @@ import fr.app.application.DiskScannerService;
 import fr.app.domain.FileNode;
 import fr.app.domain.ProgressInfo;
 import fr.app.domain.ScanResult;
+import fr.app.ui.view.CategorySlice;
+import fr.app.ui.view.DonutChartDrawer;
 import fr.app.ui.view.MainView;
-import fr.app.ui.view.TreemapDrawer;
+import fr.app.ui.view.component.CategoryLegendComponent;
+import fr.app.ui.view.component.DonutChartComponent;
 import fr.app.ui.view.component.StatisticsComponent;
 import fr.app.ui.view.component.SidebarComponent;
-import fr.app.ui.view.component.TreemapComponent;
 import fr.app.utils.Logger;
 import javafx.application.Platform;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TreeItem;
 import javafx.stage.DirectoryChooser;
@@ -20,7 +20,6 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.text.DecimalFormat;
 import java.util.List;
 
 public class MainController {
@@ -28,10 +27,11 @@ public class MainController {
     private final DiskScannerService diskScannerService;
     private final MainView view;
     private final Stage stage;
-    private final TreemapDrawer treemapDrawer = new TreemapDrawer();
     private final StatisticsComponent statisticsComponent;
     private final SidebarComponent sidebarComponent;
-    private final TreemapComponent treemapComponent;
+    private final DonutChartComponent donutChartComponent;
+    private final CategoryLegendComponent categoryLegendComponent;
+    private final DonutChartDrawer donutChartDrawer = new DonutChartDrawer();
 
     private String selectedPath = "C:/Users/";
 
@@ -40,7 +40,8 @@ public class MainController {
         this.view = view;
         this.sidebarComponent = view.getSidebar();
         this.statisticsComponent = sidebarComponent.statisticsComponent;
-        this.treemapComponent = sidebarComponent.treemapComponent;
+        this.donutChartComponent = sidebarComponent.donutChartComponent;
+        this.categoryLegendComponent = sidebarComponent.categoryLegendComponent;
         this.stage = stage;
     }
 
@@ -65,31 +66,47 @@ public class MainController {
 
         diskScannerService.scan(
                 rootPath,
-                progressInfo -> Platform.runLater(() -> {
-                    String foldersText = "Dossiers analysés : " + progressInfo.getFoldersScanned();
-                    String filesText = "Fichiers analysés : " + progressInfo.getFilesScanned();
-                    String sizeText = "Taille cumulée : " + progressInfo.getTotalSize();
-                    String filesSpeedText = "Vitesse fichiers : " + progressInfo.getScanSpeed();
-                    String bytesSpeedText = "Vitesse lecture : " + progressInfo.getBytesSpeed();
-                    String durationText = "Durée : " + progressInfo.getDurationFormatted();
-
-                    statisticsComponent.updateStats(
-                            foldersText,
-                            filesText,
-                            sizeText,
-                            filesSpeedText,
-                            bytesSpeedText,
-                            durationText
-                    );
-                }),
+                progressInfo -> Platform.runLater(() -> statisticsComponent.updateStats(
+                        progressInfo.getDurationFormatted(),
+                        progressInfo.getScanSpeed(),
+                        progressInfo.getBytesSpeed()
+                )),
                 scanResult -> Platform.runLater(() -> onScanComplete(scanResult)),
                 error -> Platform.runLater(() -> onScanError(error))
         );
     }
 
     private void onScanComplete(ScanResult result) {
-        drawTreemap(result.getRootNode());
         updateTreeView(result.getRootNode());
+        updateDonutChart(result.getRootNode());
+    }
+
+    private void updateDonutChart(FileNode root) {
+        NodeCounts counts = countNodes(root);
+        List<CategorySlice> slices = donutChartDrawer.buildSlices(root);
+        long totalBytes = root.getSize();
+        donutChartComponent.update(slices, totalBytes, counts.files(), counts.folders());
+        categoryLegendComponent.update(slices, totalBytes);
+    }
+
+    private record NodeCounts(long files, long folders) {}
+
+    private NodeCounts countNodes(FileNode node) {
+        long files = 0;
+        long folders = 0;
+        if (node.getChildren() != null) {
+            for (FileNode child : node.getChildren()) {
+                if (child.isDirectory()) {
+                    folders++;
+                } else {
+                    files++;
+                }
+                NodeCounts childCounts = countNodes(child);
+                files += childCounts.files();
+                folders += childCounts.folders();
+            }
+        }
+        return new NodeCounts(files, folders);
     }
 
     private void onScanError(Throwable error) {
@@ -121,12 +138,6 @@ public class MainController {
                 buildTree(child, childItem);
             }
         }
-    }
-
-    private void drawTreemap(FileNode root) {
-        Canvas canvas = treemapComponent.getCanvas();
-        GraphicsContext gc = canvas.getGraphicsContext2D();
-        treemapDrawer.drawTreemap(gc, treemapDrawer.buildTreemap(root, 5, 5, (float) canvas.getWidth(), (float) canvas.getHeight()));
     }
 
     public void shutdown() {
