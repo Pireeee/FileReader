@@ -37,6 +37,10 @@ $padding-standard: 20px;
     -fx-background-color: #4CAF50; /* Vert */
 }
 
+.sidebar-component .button.stop-scan {
+    -fx-background-color: #E4572E; /* Orange-rouge */
+}
+
 .sidebar-component .button.choose-folder {
     -fx-background-color: #9C27B0; /* Violet/Rose */
 }
@@ -54,6 +58,22 @@ $padding-standard: 20px;
     -fx-border-radius: 10px;
     -fx-background-radius: 10px;
     -fx-padding: 15px;
+}
+
+.path-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #555555;
+}
+
+.stat-tile-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #777777;
+}
+
+.stat-tile-value {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
 }
 
 .progress-bar {
@@ -120,12 +140,6 @@ $padding-standard: 20px;
     -fx-padding: 3px;
 }
 
-/* === Scan summary === */
-.scan-summary-label {
-    -fx-font-size: 12px;
-    -fx-text-fill: #555555;
-}
-
 .split-pane-divider {
     -fx-background-color: #F5F5F5;
     -fx-padding: 0 4px; /* Épaisseur horizontale de la poignée */
@@ -165,6 +179,72 @@ $padding-standard: 20px;
     -fx-background-color: #F0F0F0;
     -fx-text-fill: #333333;
     -fx-font-weight: bold;
+}
+
+.status-bar {
+    -fx-padding: 4px 2px 0 2px;
+}
+
+.status-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #777777;
+}
+
+.inspector-toggle-button {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CCCCCC;
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-padding: 6px 14px;
+    -fx-text-fill: #777777;
+}
+
+.inspector-toggle-button:selected {
+    -fx-background-color: #F0F0F0;
+    -fx-text-fill: #333333;
+    -fx-font-weight: bold;
+}
+
+/* === Inspector panel === */
+.inspector-panel {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CCCCCC;
+    -fx-border-width: 0 0 0 1;
+}
+
+.inspector-name {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+.inspector-path {
+    -fx-font-size: 11px;
+    -fx-text-fill: #777777;
+}
+
+.inspector-detail-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #777777;
+}
+
+.inspector-detail-value {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+.inspector-action {
+    -fx-font-size: 13px;
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CCCCCC;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 6px 10px;
+}
+
+.inspector-action:hover {
+    -fx-background-color: #F0F0F0;
 }
 
 .percent-column{

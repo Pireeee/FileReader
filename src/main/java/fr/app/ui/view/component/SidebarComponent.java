@@ -16,6 +16,9 @@ public class SidebarComponent extends VBox {
     public SidebarComponent() {
         setSpacing(10);
         setMaxHeight(Double.MAX_VALUE);
+        // Without this, long content (e.g. a deep scanned path) inflates the
+        // computed min width and the SplitPane divider refuses to shrink past it.
+        setMinWidth(150);
         getStyleClass().add("sidebar-component");
 
         title.getStyleClass().add("title");

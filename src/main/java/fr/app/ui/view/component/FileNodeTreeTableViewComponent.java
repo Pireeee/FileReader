@@ -35,7 +35,7 @@ public class FileNodeTreeTableViewComponent extends TreeTableView<FileNode> {
         refresh();
     }
 
-    private Color resolveColor(TreeItem<FileNode> item) {
+    public Color resolveColor(TreeItem<FileNode> item) {
         if (item == null) {
             return CategoryPalette.OTHER;
         }

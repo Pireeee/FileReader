@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -21,7 +22,7 @@ public class FileSystemScanner implements DiskScanner {
     }
 
     @Override
-    public ScanResult scan(Path root, Consumer<ProgressInfo> progressCallback) throws IOException {
+    public ScanResult scan(Path root, Consumer<ProgressInfo> progressCallback, AtomicBoolean cancelled) throws IOException {
         long startTimeNanos = System.nanoTime();
         ProgressReporter reporter = new ProgressReporter(progressCallback, startTimeNanos);
         FileNodeFactory nodeFactory = new FileNodeFactory();
@@ -29,7 +30,8 @@ public class FileSystemScanner implements DiskScanner {
                 root,
                 this,
                 nodeFactory,
-                reporter
+                reporter,
+                cancelled
         );
         FileNode rootNode = pool.invoke(scanTask);
 

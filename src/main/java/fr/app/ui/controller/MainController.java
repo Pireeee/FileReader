@@ -1,8 +1,8 @@
 package fr.app.ui.controller;
 
 import fr.app.application.DiskScannerService;
+import fr.app.application.ScanHandle;
 import fr.app.domain.FileNode;
-import fr.app.domain.ProgressInfo;
 import fr.app.domain.ScanResult;
 import fr.app.ui.view.CategorySlice;
 import fr.app.ui.view.DonutChartDrawer;
@@ -13,13 +13,19 @@ import fr.app.ui.view.component.StatisticsComponent;
 import fr.app.ui.view.component.SidebarComponent;
 import fr.app.utils.Logger;
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableColumn;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
+import java.awt.Desktop;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -47,6 +53,8 @@ public class MainController {
     private Map<String, Color> categoryColors = Map.of();
     private Map<String, Color> fileTypeColors = Map.of();
     private ViewMode viewMode = ViewMode.FOLDERS;
+    private ScanHandle currentScan;
+    private FileNode selectedNode;
 
     public MainController(DiskScannerService diskScannerService, MainView view, Stage stage) {
         this.diskScannerService = diskScannerService;
@@ -61,11 +69,68 @@ public class MainController {
     public void init() {
         statisticsComponent.setPath(selectedPath);
         sidebarComponent.chooseButton.setOnAction(e -> openDirectoryChooser());
-        sidebarComponent.scanButton.setOnAction(e -> startScan());
+        setScanning(false);
         view.getMainContainer().filterField.textProperty()
                 .addListener((obs, oldValue, newValue) -> refreshTreeView());
         view.getMainContainer().foldersToggle.setOnAction(e -> switchViewMode(ViewMode.FOLDERS));
         view.getMainContainer().fileTypesToggle.setOnAction(e -> switchViewMode(ViewMode.FILE_TYPES));
+        view.getMainContainer().treeTableViewComponent.getSortOrder()
+                .addListener((ListChangeListener<TreeTableColumn<FileNode, ?>>) change -> updateSortLabel());
+        view.getMainContainer().treeTableViewComponent.getSelectionModel().selectedItemProperty()
+                .addListener((obs, oldItem, newItem) -> onSelectionChanged(newItem));
+        view.getMainContainer().inspectorToggle.setOnAction(e -> updateInspectorVisibility());
+        view.getMainContainer().inspectorPanel.openInExplorerButton.setOnAction(e -> openInExplorer());
+        view.getMainContainer().inspectorPanel.copyPathButton.setOnAction(e -> copyPath());
+    }
+
+    private void onSelectionChanged(TreeItem<FileNode> item) {
+        selectedNode = item != null ? item.getValue() : null;
+        if (selectedNode != null) {
+            boolean isSyntheticGroup = viewMode == ViewMode.FILE_TYPES
+                    && item.getParent() == view.getMainContainer().treeTableViewComponent.getRoot();
+            Color color = view.getMainContainer().treeTableViewComponent.resolveColor(item);
+            view.getMainContainer().inspectorPanel.show(selectedNode, color, !isSyntheticGroup);
+        }
+        updateInspectorVisibility();
+    }
+
+    private void updateInspectorVisibility() {
+        boolean visible = selectedNode != null && view.getMainContainer().inspectorToggle.isSelected();
+        view.getMainContainer().inspectorPanel.setVisible(visible);
+        view.getMainContainer().inspectorPanel.setManaged(visible);
+    }
+
+    private void openInExplorer() {
+        if (selectedNode == null) {
+            return;
+        }
+        try {
+            Desktop.getDesktop().open(selectedNode.getPath().toFile());
+        } catch (IOException e) {
+            Logger.warn("Could not open path: " + selectedNode.getPath());
+        }
+    }
+
+    private void copyPath() {
+        if (selectedNode == null) {
+            return;
+        }
+        ClipboardContent content = new ClipboardContent();
+        content.putString(selectedNode.getPath().toString());
+        Clipboard.getSystemClipboard().setContent(content);
+    }
+
+    private void updateSortLabel() {
+        List<TreeTableColumn<FileNode, ?>> sortOrder = view.getMainContainer().treeTableViewComponent.getSortOrder();
+        String text;
+        if (sortOrder.isEmpty()) {
+            text = "Sorted by size ↓";
+        } else {
+            TreeTableColumn<FileNode, ?> column = sortOrder.get(0);
+            String arrow = column.getSortType() == TreeTableColumn.SortType.ASCENDING ? "↑" : "↓";
+            text = "Sorted by " + column.getText() + " " + arrow;
+        }
+        view.getMainContainer().sortLabel.setText(text);
     }
 
     private void switchViewMode(ViewMode mode) {
@@ -88,20 +153,47 @@ public class MainController {
 
     private void startScan() {
         Path rootPath = Path.of(selectedPath);
+        setScanning(true);
 
-        diskScannerService.scan(
+        currentScan = diskScannerService.scan(
                 rootPath,
-                progressInfo -> Platform.runLater(() -> statisticsComponent.updateStats(
-                        progressInfo.getDurationFormatted(),
-                        progressInfo.getScanSpeed(),
-                        progressInfo.getBytesSpeed()
-                )),
+                progressInfo -> Platform.runLater(() -> {
+                    statisticsComponent.updateSpeed(progressInfo.getScanSpeed(), progressInfo.getBytesSpeed());
+                    statisticsComponent.updateCounts(progressInfo.getFoldersScanned(), progressInfo.getFilesScanned());
+                }),
                 scanResult -> Platform.runLater(() -> onScanComplete(scanResult)),
-                error -> Platform.runLater(() -> onScanError(error))
+                error -> Platform.runLater(() -> onScanError(error)),
+                () -> Platform.runLater(this::onScanCancelled)
         );
     }
 
+    private void stopScan() {
+        if (currentScan != null) {
+            currentScan.cancel();
+        }
+    }
+
+    private void onScanCancelled() {
+        Logger.info("Scan annulé par l'utilisateur");
+        setScanning(false);
+    }
+
+    private void setScanning(boolean scanning) {
+        sidebarComponent.chooseButton.setDisable(scanning);
+        sidebarComponent.scanButton.setText(scanning ? "Stop Scan" : "Scan Folder");
+        sidebarComponent.scanButton.setOnAction(e -> {
+            if (scanning) {
+                stopScan();
+            } else {
+                startScan();
+            }
+        });
+        sidebarComponent.scanButton.getStyleClass().removeAll("scan-folder", "stop-scan");
+        sidebarComponent.scanButton.getStyleClass().add(scanning ? "stop-scan" : "scan-folder");
+    }
+
     private void onScanComplete(ScanResult result) {
+        setScanning(false);
         currentRoot = result.getRootNode();
         extensionRoot = buildExtensionRoot(currentRoot);
 
@@ -173,6 +265,7 @@ public class MainController {
         long totalBytes = root.getSize();
         donutChartComponent.update(slices, totalBytes, counts.files(), counts.folders());
         categoryLegendComponent.update(slices, totalBytes);
+        statisticsComponent.updateCounts(counts.folders(), counts.files());
     }
 
     private record NodeCounts(long files, long folders) {}
@@ -196,6 +289,7 @@ public class MainController {
     }
 
     private void onScanError(Throwable error) {
+        setScanning(false);
         Logger.error("Erreur pendant le scan", error);
 
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -217,6 +311,10 @@ public class MainController {
         }
         view.getMainContainer().treeTableViewComponent.setRoot(rootItem);
         view.getMainContainer().treeTableViewComponent.setShowRoot(false);
+
+        int totalTopLevel = base.getChildren() != null ? base.getChildren().size() : 0;
+        int visibleTopLevel = rootItem.getChildren().size();
+        view.getMainContainer().itemCountLabel.setText(visibleTopLevel + " of " + totalTopLevel + " items");
     }
 
     // Returns null when neither this node nor any descendant matches the query.

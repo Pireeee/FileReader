@@ -1,6 +1,7 @@
 package fr.app.infrastructure;
 
 import fr.app.domain.FileNode;
+import fr.app.domain.ScanCancelledException;
 import fr.app.utils.Logger;
 
 import java.io.File;
@@ -10,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 class DirectoryScanTask extends RecursiveTask<FileNode> {
@@ -18,21 +20,28 @@ class DirectoryScanTask extends RecursiveTask<FileNode> {
     private final FileSystemScanner scanner;
     private final FileNodeFactory nodeFactory;
     private final ProgressReporter progressReporter;
+    private final AtomicBoolean cancelled;
 
     public DirectoryScanTask(
             Path path,
             FileSystemScanner scanner,
             FileNodeFactory nodeFactory,
-            ProgressReporter progressReporter
+            ProgressReporter progressReporter,
+            AtomicBoolean cancelled
     ) {
         this.path = path;
         this.scanner = scanner;
         this.nodeFactory = nodeFactory;
         this.progressReporter = progressReporter;
+        this.cancelled = cancelled;
     }
 
     @Override
     protected FileNode compute() {
+        if (cancelled.get()) {
+            throw new ScanCancelledException();
+        }
+
         if (Files.isSymbolicLink(path)) {
             Logger.info("Skipping symlink: " + path);
             return nodeFactory.createEmptyNode(path.getFileName().toString(), path, false);
@@ -71,9 +80,13 @@ class DirectoryScanTask extends RecursiveTask<FileNode> {
         List<DirectoryScanTask> subtasks = new ArrayList<>();
 
         for (File file : files) {
+            if (cancelled.get()) {
+                throw new ScanCancelledException();
+            }
+
             if (file.isDirectory()) {
                 DirectoryScanTask subtask = new DirectoryScanTask(
-                        file.toPath(), scanner, nodeFactory, progressReporter);
+                        file.toPath(), scanner, nodeFactory, progressReporter, cancelled);
                 subtask.fork();
                 subtasks.add(subtask);
             } else {
