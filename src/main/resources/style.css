@@ -138,6 +138,35 @@ $padding-standard: 20px;
     -fx-padding: 0;
 }
 
+.filter-field {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #CCCCCC;
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-padding: 6px 14px;
+}
+
+.view-toggle-group {
+    -fx-border-color: #CCCCCC;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-background-color: #FFFFFF;
+}
+
+.view-toggle-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #777777;
+    -fx-padding: 6px 14px;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+}
+
+.view-toggle-button:selected {
+    -fx-background-color: #F0F0F0;
+    -fx-text-fill: #333333;
+    -fx-font-weight: bold;
+}
+
 .percent-column{
     -fx-alignment: CENTER_RIGHT;
     -fx-text-fill: black; /* Couleur du texte */

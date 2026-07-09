@@ -1,6 +1,7 @@
 package fr.app.ui.view.component;
 
 import fr.app.domain.FileNode;
+import fr.app.ui.view.CategoryPalette;
 import fr.app.utils.SizeFormatter;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -8,16 +9,45 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 public class FileNodeTreeTableViewComponent extends TreeTableView<FileNode> {
+
+    private Map<String, Color> categoryColors = Map.of();
 
     public FileNodeTreeTableViewComponent() {
         getStyleClass().add("tree-table-view");
         setupColumns();
+    }
+
+    /**
+     * Maps a top-level entry's name to the color it's shown with in the donut
+     * chart, so a row's category dot stays consistent with the chart.
+     */
+    public void setCategoryColors(Map<String, Color> categoryColors) {
+        this.categoryColors = categoryColors != null ? categoryColors : Map.of();
+        refresh();
+    }
+
+    private Color resolveColor(TreeItem<FileNode> item) {
+        if (item == null) {
+            return CategoryPalette.OTHER;
+        }
+        TreeItem<FileNode> topLevel = item;
+        while (topLevel.getParent() != null && topLevel.getParent().getParent() != null) {
+            topLevel = topLevel.getParent();
+        }
+        FileNode node = topLevel.getValue();
+        if (node == null) {
+            return CategoryPalette.OTHER;
+        }
+        return categoryColors.getOrDefault(node.getName(), CategoryPalette.OTHER);
     }
 
     private void setupColumns() {
@@ -26,6 +56,8 @@ public class FileNodeTreeTableViewComponent extends TreeTableView<FileNode> {
         nameColumn.setCellValueFactory(param ->
                 new SimpleStringProperty(param.getValue().getValue().getName()));
         nameColumn.setCellFactory(column -> new TreeTableCell<>() {
+            private final Circle categoryDot = new Circle(4);
+
             @Override
             protected void updateItem(String name, boolean empty) {
                 super.updateItem(name, empty);
@@ -35,11 +67,14 @@ public class FileNodeTreeTableViewComponent extends TreeTableView<FileNode> {
                     setTooltip(null);
                 } else {
                     setText(name);
-                    FileNode node = getTreeTableRow().getItem();
+                    TreeItem<FileNode> treeItem = getTreeTableRow().getTreeItem();
+                    FileNode node = treeItem != null ? treeItem.getValue() : null;
                     if (node != null) {
                         Tooltip tooltip = new Tooltip(node.getPath().toString());
                         setTooltip(tooltip);
                     }
+                    categoryDot.setFill(resolveColor(treeItem));
+                    setGraphic(categoryDot);
                 }
             }
         });

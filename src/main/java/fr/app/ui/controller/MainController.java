@@ -15,12 +15,18 @@ import fr.app.utils.Logger;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TreeItem;
+import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class MainController {
 
@@ -33,7 +39,14 @@ public class MainController {
     private final CategoryLegendComponent categoryLegendComponent;
     private final DonutChartDrawer donutChartDrawer = new DonutChartDrawer();
 
+    private enum ViewMode { FOLDERS, FILE_TYPES }
+
     private String selectedPath = "C:/Users/";
+    private FileNode currentRoot;
+    private FileNode extensionRoot;
+    private Map<String, Color> categoryColors = Map.of();
+    private Map<String, Color> fileTypeColors = Map.of();
+    private ViewMode viewMode = ViewMode.FOLDERS;
 
     public MainController(DiskScannerService diskScannerService, MainView view, Stage stage) {
         this.diskScannerService = diskScannerService;
@@ -49,6 +62,17 @@ public class MainController {
         statisticsComponent.setPath(selectedPath);
         sidebarComponent.chooseButton.setOnAction(e -> openDirectoryChooser());
         sidebarComponent.scanButton.setOnAction(e -> startScan());
+        view.getMainContainer().filterField.textProperty()
+                .addListener((obs, oldValue, newValue) -> refreshTreeView());
+        view.getMainContainer().foldersToggle.setOnAction(e -> switchViewMode(ViewMode.FOLDERS));
+        view.getMainContainer().fileTypesToggle.setOnAction(e -> switchViewMode(ViewMode.FILE_TYPES));
+    }
+
+    private void switchViewMode(ViewMode mode) {
+        viewMode = mode;
+        view.getMainContainer().treeTableViewComponent.setCategoryColors(
+                mode == ViewMode.FOLDERS ? categoryColors : fileTypeColors);
+        refreshTreeView();
     }
 
     private void openDirectoryChooser() {
@@ -58,6 +82,7 @@ public class MainController {
         if (selectedDirectory != null) {
             selectedPath = selectedDirectory.getAbsolutePath();
             statisticsComponent.setPath(selectedPath);
+            startScan();
         }
     }
 
@@ -77,13 +102,74 @@ public class MainController {
     }
 
     private void onScanComplete(ScanResult result) {
-        updateTreeView(result.getRootNode());
-        updateDonutChart(result.getRootNode());
+        currentRoot = result.getRootNode();
+        extensionRoot = buildExtensionRoot(currentRoot);
+
+        List<CategorySlice> slices = donutChartDrawer.buildSlices(currentRoot);
+        categoryColors = toColorMap(slices);
+        fileTypeColors = toColorMap(donutChartDrawer.buildSlices(extensionRoot));
+
+        view.getMainContainer().treeTableViewComponent.setCategoryColors(
+                viewMode == ViewMode.FOLDERS ? categoryColors : fileTypeColors);
+        refreshTreeView();
+        updateDonutChart(currentRoot, slices);
     }
 
-    private void updateDonutChart(FileNode root) {
+    private Map<String, Color> toColorMap(List<CategorySlice> slices) {
+        return slices.stream()
+                .collect(Collectors.toMap(CategorySlice::name, CategorySlice::color, (a, b) -> a));
+    }
+
+    // Flattens files into per-extension groups without touching the shared FileNode tree.
+    private FileNode buildExtensionRoot(FileNode root) {
+        Map<String, List<FileNode>> byExtension = new HashMap<>();
+        collectFilesByExtension(root, byExtension);
+
+        long totalSize = byExtension.values().stream()
+                .flatMap(List::stream)
+                .mapToLong(FileNode::getSize)
+                .sum();
+
+        List<FileNode> groups = new ArrayList<>();
+        for (Map.Entry<String, List<FileNode>> entry : byExtension.entrySet()) {
+            List<FileNode> files = entry.getValue();
+            long groupSize = files.stream().mapToLong(FileNode::getSize).sum();
+            Instant latest = files.stream()
+                    .map(FileNode::getLastModified)
+                    .max(Instant::compareTo)
+                    .orElse(Instant.EPOCH);
+            double groupPercent = totalSize == 0 ? 0 : (groupSize * 100.0) / totalSize;
+
+            List<FileNode> filesWithGroupPercent = files.stream()
+                    .map(file -> file.withUpdatedPercentOfParent(
+                            groupSize == 0 ? 0 : (file.getSize() * 100.0) / groupSize))
+                    .toList();
+
+            String label = entry.getKey().isEmpty() ? "(no extension)" : "." + entry.getKey();
+            groups.add(new FileNode(label, root.getPath(), groupSize, groupPercent, true, latest,
+                    "", filesWithGroupPercent));
+        }
+
+        return new FileNode(root.getName(), root.getPath(), totalSize, 100, true,
+                root.getLastModified(), "", groups);
+    }
+
+    private void collectFilesByExtension(FileNode node, Map<String, List<FileNode>> byExtension) {
+        if (node.getChildren() == null) {
+            return;
+        }
+        for (FileNode child : node.getChildren()) {
+            if (child.isDirectory()) {
+                collectFilesByExtension(child, byExtension);
+            } else {
+                String extension = child.getExtension() != null ? child.getExtension() : "";
+                byExtension.computeIfAbsent(extension, key -> new ArrayList<>()).add(child);
+            }
+        }
+    }
+
+    private void updateDonutChart(FileNode root, List<CategorySlice> slices) {
         NodeCounts counts = countNodes(root);
-        List<CategorySlice> slices = donutChartDrawer.buildSlices(root);
         long totalBytes = root.getSize();
         donutChartComponent.update(slices, totalBytes, counts.files(), counts.folders());
         categoryLegendComponent.update(slices, totalBytes);
@@ -119,25 +205,47 @@ public class MainController {
         alert.showAndWait();
     }
 
-    private void updateTreeView(FileNode rootNode) {
-        TreeItem<FileNode> rootItem = new TreeItem<>(rootNode);
-        buildTree(rootNode, rootItem);
+    private void refreshTreeView() {
+        if (currentRoot == null) {
+            return;
+        }
+        FileNode base = viewMode == ViewMode.FOLDERS ? currentRoot : extensionRoot;
+        String query = view.getMainContainer().filterField.getText().trim().toLowerCase();
+        TreeItem<FileNode> rootItem = buildFilteredTree(base, query);
+        if (rootItem == null) {
+            rootItem = new TreeItem<>(base);
+        }
         view.getMainContainer().treeTableViewComponent.setRoot(rootItem);
-        view.getMainContainer().treeTableViewComponent.setShowRoot(true);
+        view.getMainContainer().treeTableViewComponent.setShowRoot(false);
     }
 
-    private void buildTree(FileNode node, TreeItem<FileNode> parentItem) {
+    // Returns null when neither this node nor any descendant matches the query.
+    private TreeItem<FileNode> buildFilteredTree(FileNode node, String query) {
+        List<TreeItem<FileNode>> matchingChildren = new ArrayList<>();
         if (node.getChildren() != null) {
             List<FileNode> sortedChildren = node.getChildren().stream()
                     .sorted((a, b) -> Long.compare(b.getSize(), a.getSize()))
                     .toList();
 
             for (FileNode child : sortedChildren) {
-                TreeItem<FileNode> childItem = new TreeItem<>(child);
-                parentItem.getChildren().add(childItem);
-                buildTree(child, childItem);
+                TreeItem<FileNode> childItem = buildFilteredTree(child, query);
+                if (childItem != null) {
+                    matchingChildren.add(childItem);
+                }
             }
         }
+
+        boolean selfMatches = query.isEmpty() || node.getName().toLowerCase().contains(query);
+        if (!selfMatches && matchingChildren.isEmpty()) {
+            return null;
+        }
+
+        TreeItem<FileNode> item = new TreeItem<>(node);
+        item.getChildren().addAll(matchingChildren);
+        if (!query.isEmpty() && !matchingChildren.isEmpty()) {
+            item.setExpanded(true);
+        }
+        return item;
     }
 
     public void shutdown() {

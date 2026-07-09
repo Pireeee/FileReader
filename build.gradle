@@ -31,5 +31,4 @@ jar {
 }
 
 dependencies {
-    // Ajoute ici d'autres libs si besoin
 }

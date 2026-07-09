@@ -2,7 +2,6 @@ package fr.app.ui.view;
 
 import fr.app.domain.FileNode;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.ArcType;
 import javafx.scene.shape.StrokeLineCap;
 
@@ -19,17 +18,6 @@ public class DonutChartDrawer {
     private static final int MIN_CATEGORIES = 3;
     private static final int MAX_CATEGORIES = 7;
     private static final double COVERAGE_THRESHOLD = 0.90;
-
-    private static final Color[] PALETTE = {
-            Color.web("#9C27B0"), // purple
-            Color.web("#4CAF50"), // green
-            Color.web("#2E9BB5"), // teal/blue
-            Color.web("#D9A441"), // gold
-            Color.web("#E4572E"), // orange-red
-            Color.web("#3F51B5"), // indigo
-            Color.web("#00897B"), // dark teal
-    };
-    private static final Color OTHER_COLOR = Color.web("#9E9E9E"); // gray
 
     /**
      * Picks the biggest top-level entries (3 to 7, by real scanned size) and folds
@@ -62,13 +50,15 @@ public class DonutChartDrawer {
 
         for (int i = 0; i < individualCount; i++) {
             FileNode node = sorted.get(i);
-            slices.add(new CategorySlice(node.getName(), node.getSize(), 1, PALETTE[i % PALETTE.length]));
+            slices.add(new CategorySlice(node.getName(), node.getSize(), 1,
+                    CategoryPalette.COLORS[i % CategoryPalette.COLORS.length]));
         }
 
         if (sorted.size() > individualCount) {
             List<FileNode> rest = sorted.subList(individualCount, sorted.size());
             long otherSize = rest.stream().mapToLong(FileNode::getSize).sum();
-            slices.add(new CategorySlice("Other (" + rest.size() + " items)", otherSize, rest.size(), OTHER_COLOR));
+            slices.add(new CategorySlice("Other (" + rest.size() + " items)", otherSize, rest.size(),
+                    CategoryPalette.OTHER));
         }
 
         return slices;
