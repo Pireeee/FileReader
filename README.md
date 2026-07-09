@@ -90,7 +90,7 @@ runtime/bin/java --module fr.app/fr.app.ui.MainApp
 
 ## 📄 **License**
 
-Distributed under the MIT License *(or replace with your actual license if different)*.
+Distributed under the [MIT License](./LICENSE).
 
 ---
 
