@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 public class InspectorPanelComponent extends VBox {
 
     public final Button openInExplorerButton = new Button("Open in Explorer");
+    public final Button scanFolderButton = new Button("Scan This Folder");
     public final Button copyPathButton = new Button("Copy Path");
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -53,11 +54,13 @@ public class InspectorPanelComponent extends VBox {
         );
 
         openInExplorerButton.setMaxWidth(Double.MAX_VALUE);
+        scanFolderButton.setMaxWidth(Double.MAX_VALUE);
         copyPathButton.setMaxWidth(Double.MAX_VALUE);
-        openInExplorerButton.getStyleClass().add("inspector-action");
+        openInExplorerButton.getStyleClass().addAll("inspector-action", "inspector-action-primary");
+        scanFolderButton.getStyleClass().add("inspector-action");
         copyPathButton.getStyleClass().add("inspector-action");
 
-        getChildren().addAll(nameRow, pathLabel, details, openInExplorerButton, copyPathButton);
+        getChildren().addAll(nameRow, pathLabel, details, openInExplorerButton, scanFolderButton, copyPathButton);
     }
 
     private HBox detailRow(String label, Label valueLabel) {
@@ -80,6 +83,7 @@ public class InspectorPanelComponent extends VBox {
 
         openInExplorerButton.setDisable(!actionsEnabled);
         copyPathButton.setDisable(!actionsEnabled);
+        scanFolderButton.setDisable(!actionsEnabled || !node.isDirectory());
     }
 
     private String fileType(FileNode node) {

@@ -1,17 +1,15 @@
-package fr.app.ui.view.component;
+package fr.app.ui.view.sidebar;
 
 import javafx.scene.control.Button;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 
 public class SidebarComponent extends VBox {
-    public final Text title = new Text("Pire's File Reader");
     public final Button chooseButton = new Button("Choose Folder");
     public final Button scanButton = new Button("Scan Folder");
+    public final PathBarComponent pathBarComponent = new PathBarComponent();
     public final StatisticsComponent statisticsComponent = new StatisticsComponent();
     public final DonutChartComponent donutChartComponent = new DonutChartComponent();
-    public final CategoryLegendComponent categoryLegendComponent = new CategoryLegendComponent();
 
     public SidebarComponent() {
         setSpacing(10);
@@ -21,8 +19,6 @@ public class SidebarComponent extends VBox {
         setMinWidth(150);
         getStyleClass().add("sidebar-component");
 
-        title.getStyleClass().add("title");
-
         chooseButton.getStyleClass().addAll("button", "choose-folder");
         chooseButton.setMaxWidth(Double.MAX_VALUE);
 
@@ -31,8 +27,7 @@ public class SidebarComponent extends VBox {
 
         donutChartComponent.setPrefSize(200, 200);
         setVgrow(donutChartComponent, Priority.ALWAYS);
-        setVgrow(statisticsComponent, Priority.ALWAYS);
 
-        getChildren().addAll(title, chooseButton, scanButton, donutChartComponent, categoryLegendComponent, statisticsComponent);
+        getChildren().addAll(chooseButton, scanButton, pathBarComponent, donutChartComponent, statisticsComponent);
     }
 }

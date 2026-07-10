@@ -1,4 +1,4 @@
-package fr.app.ui.view.component;
+package fr.app.ui.view.table;
 
 import fr.app.domain.FileNode;
 import javafx.application.Platform;
@@ -11,17 +11,25 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 public class FileNodeTreeTableContextMenu extends ContextMenu {
 
+    public final MenuItem scanFolderItem = new MenuItem("Scan This Folder");
+    private Consumer<FileNode> onScanFolder = node -> {};
+
+    public void setOnScanFolder(Consumer<FileNode> handler) {
+        this.onScanFolder = handler != null ? handler : node -> {};
+    }
+
     public FileNodeTreeTableContextMenu(TreeTableView<FileNode> treeTableView) {
-        MenuItem deleteItem = new MenuItem("Supprimer");
+        MenuItem deleteItem = new MenuItem("Delete");
         deleteItem.setOnAction(event -> {
             TreeItem<FileNode> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
             if (selectedItem != null && selectedItem.getParent() != null) {
 
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                        "Supprimer définitivement ?", ButtonType.YES, ButtonType.NO);
+                        "Delete permanently?", ButtonType.YES, ButtonType.NO);
                 confirm.showAndWait();
                 if (confirm.getResult() != ButtonType.YES) return;
 
@@ -64,8 +72,8 @@ public class FileNodeTreeTableContextMenu extends ContextMenu {
             }
         });
 
-        // Ouvrir dans l’explorateur
-        MenuItem openInExplorerItem = new MenuItem("Ouvrir dans l’explorateur");
+        // Open in Explorer
+        MenuItem openInExplorerItem = new MenuItem("Open in Explorer");
         openInExplorerItem.setOnAction(event -> {
             TreeItem<FileNode> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
             if (selectedItem != null) {
@@ -77,8 +85,8 @@ public class FileNodeTreeTableContextMenu extends ContextMenu {
             }
         });
 
-        // Copier chemin
-        MenuItem copyPathItem = new MenuItem("Copier le chemin");
+        // Copy path
+        MenuItem copyPathItem = new MenuItem("Copy Path");
         copyPathItem.setOnAction(event -> {
             TreeItem<FileNode> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
             if (selectedItem != null) {
@@ -89,9 +97,21 @@ public class FileNodeTreeTableContextMenu extends ContextMenu {
             }
         });
 
-        getItems().addAll(deleteItem, openInExplorerItem, copyPathItem, new SeparatorMenuItem());
+        scanFolderItem.setOnAction(event -> {
+            TreeItem<FileNode> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
+            if (selectedItem != null) {
+                onScanFolder.accept(selectedItem.getValue());
+            }
+        });
 
-        // Visibilité colonnes
+        setOnShowing(event -> {
+            TreeItem<FileNode> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
+            scanFolderItem.setDisable(selectedItem == null || !selectedItem.getValue().isDirectory());
+        });
+
+        getItems().addAll(deleteItem, openInExplorerItem, scanFolderItem, copyPathItem, new SeparatorMenuItem());
+
+        // Column visibility
         for (TreeTableColumn<FileNode, ?> col : treeTableView.getColumns()) {
             CheckMenuItem item = new CheckMenuItem(col.getText());
             item.setSelected(true);

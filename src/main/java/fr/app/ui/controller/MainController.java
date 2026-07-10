@@ -7,11 +7,11 @@ import fr.app.domain.ScanResult;
 import fr.app.ui.view.CategorySlice;
 import fr.app.ui.view.DonutChartDrawer;
 import fr.app.ui.view.MainView;
-import fr.app.ui.view.component.CategoryLegendComponent;
-import fr.app.ui.view.component.DonutChartComponent;
-import fr.app.ui.view.component.StatisticsComponent;
-import fr.app.ui.view.component.SidebarComponent;
+import fr.app.ui.view.sidebar.DonutChartComponent;
+import fr.app.ui.view.sidebar.StatisticsComponent;
+import fr.app.ui.view.sidebar.SidebarComponent;
 import fr.app.utils.Logger;
+import fr.app.utils.SizeFormatter;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.Alert;
@@ -42,7 +42,6 @@ public class MainController {
     private final StatisticsComponent statisticsComponent;
     private final SidebarComponent sidebarComponent;
     private final DonutChartComponent donutChartComponent;
-    private final CategoryLegendComponent categoryLegendComponent;
     private final DonutChartDrawer donutChartDrawer = new DonutChartDrawer();
 
     private enum ViewMode { FOLDERS, FILE_TYPES }
@@ -62,12 +61,11 @@ public class MainController {
         this.sidebarComponent = view.getSidebar();
         this.statisticsComponent = sidebarComponent.statisticsComponent;
         this.donutChartComponent = sidebarComponent.donutChartComponent;
-        this.categoryLegendComponent = sidebarComponent.categoryLegendComponent;
         this.stage = stage;
     }
 
     public void init() {
-        statisticsComponent.setPath(selectedPath);
+        sidebarComponent.pathBarComponent.setPath(selectedPath);
         sidebarComponent.chooseButton.setOnAction(e -> openDirectoryChooser());
         setScanning(false);
         view.getMainContainer().filterField.textProperty()
@@ -81,6 +79,8 @@ public class MainController {
         view.getMainContainer().inspectorToggle.setOnAction(e -> updateInspectorVisibility());
         view.getMainContainer().inspectorPanel.openInExplorerButton.setOnAction(e -> openInExplorer());
         view.getMainContainer().inspectorPanel.copyPathButton.setOnAction(e -> copyPath());
+        view.getMainContainer().inspectorPanel.scanFolderButton.setOnAction(e -> scanNode(selectedNode));
+        view.getMainContainer().treeTableViewComponent.contextMenu.setOnScanFolder(this::scanNode);
     }
 
     private void onSelectionChanged(TreeItem<FileNode> item) {
@@ -120,6 +120,15 @@ public class MainController {
         Clipboard.getSystemClipboard().setContent(content);
     }
 
+    private void scanNode(FileNode node) {
+        if (node == null || !node.isDirectory()) {
+            return;
+        }
+        selectedPath = node.getPath().toString();
+        sidebarComponent.pathBarComponent.setPath(selectedPath);
+        startScan();
+    }
+
     private void updateSortLabel() {
         List<TreeTableColumn<FileNode, ?>> sortOrder = view.getMainContainer().treeTableViewComponent.getSortOrder();
         String text;
@@ -142,11 +151,11 @@ public class MainController {
 
     private void openDirectoryChooser() {
         DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle("Choisir un dossier à scanner");
+        chooser.setTitle("Choose a folder to scan");
         File selectedDirectory = chooser.showDialog(stage);
         if (selectedDirectory != null) {
             selectedPath = selectedDirectory.getAbsolutePath();
-            statisticsComponent.setPath(selectedPath);
+            sidebarComponent.pathBarComponent.setPath(selectedPath);
             startScan();
         }
     }
@@ -160,6 +169,7 @@ public class MainController {
                 progressInfo -> Platform.runLater(() -> {
                     statisticsComponent.updateSpeed(progressInfo.getScanSpeed(), progressInfo.getBytesSpeed());
                     statisticsComponent.updateCounts(progressInfo.getFoldersScanned(), progressInfo.getFilesScanned());
+                    statisticsComponent.updateScanTime(progressInfo.getDurationFormatted());
                 }),
                 scanResult -> Platform.runLater(() -> onScanComplete(scanResult)),
                 error -> Platform.runLater(() -> onScanError(error)),
@@ -174,7 +184,7 @@ public class MainController {
     }
 
     private void onScanCancelled() {
-        Logger.info("Scan annulé par l'utilisateur");
+        Logger.info("Scan cancelled by user");
         setScanning(false);
     }
 
@@ -190,6 +200,7 @@ public class MainController {
         });
         sidebarComponent.scanButton.getStyleClass().removeAll("scan-folder", "stop-scan");
         sidebarComponent.scanButton.getStyleClass().add(scanning ? "stop-scan" : "scan-folder");
+        view.getMainContainer().scanningOverlay.setScanning(scanning);
     }
 
     private void onScanComplete(ScanResult result) {
@@ -263,8 +274,8 @@ public class MainController {
     private void updateDonutChart(FileNode root, List<CategorySlice> slices) {
         NodeCounts counts = countNodes(root);
         long totalBytes = root.getSize();
-        donutChartComponent.update(slices, totalBytes, counts.files(), counts.folders());
-        categoryLegendComponent.update(slices, totalBytes);
+        donutChartComponent.update(slices, totalBytes);
+        sidebarComponent.pathBarComponent.setSize(SizeFormatter.format(totalBytes));
         statisticsComponent.updateCounts(counts.folders(), counts.files());
     }
 
@@ -290,11 +301,11 @@ public class MainController {
 
     private void onScanError(Throwable error) {
         setScanning(false);
-        Logger.error("Erreur pendant le scan", error);
+        Logger.error("Error during scan", error);
 
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Erreur lors du scan");
-        alert.setHeaderText("Une erreur est survenue pendant le scan");
+        alert.setTitle("Scan Error");
+        alert.setHeaderText("An error occurred during the scan");
         alert.setContentText(error.getMessage());
         alert.showAndWait();
     }

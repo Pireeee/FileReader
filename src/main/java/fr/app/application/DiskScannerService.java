@@ -46,7 +46,7 @@ public class DiskScannerService {
                     if (cause instanceof ScanCancelledException) {
                         cancelledCallback.run();
                     } else {
-                        Logger.error("Erreur durant le scan : " + cause.getMessage(), cause);
+                        Logger.error("Error during scan: " + cause.getMessage(), cause);
                         errorCallback.accept(cause);
                     }
                     return null;

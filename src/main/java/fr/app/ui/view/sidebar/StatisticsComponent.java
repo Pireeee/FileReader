@@ -1,43 +1,41 @@
-package fr.app.ui.view.component;
+package fr.app.ui.view.sidebar;
 
 import javafx.application.Platform;
 import javafx.scene.control.Label;
-import javafx.scene.control.OverrunStyle;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 
 public class StatisticsComponent extends VBox {
 
-    public final Label pathLabel = new Label();
-
     private final Label foldersValue = new Label("0");
     private final Label filesValue = new Label("0");
     private final Label speedValue = new Label("0 files/s");
     private final Label readValue = new Label("0 B/s");
+    private final Label scanTimeValue = new Label("0:00.000");
 
     public StatisticsComponent() {
-        setSpacing(6);
+        setSpacing(8);
         getStyleClass().add("statistics-component");
-        pathLabel.getStyleClass().add("path-label");
-        pathLabel.setMinWidth(0);
-        pathLabel.setMaxWidth(Double.MAX_VALUE);
-        pathLabel.setTextOverrun(OverrunStyle.LEADING_ELLIPSIS);
 
-        ColumnConstraints column = new ColumnConstraints();
-        column.setPercentWidth(50);
+        ColumnConstraints twoColumn = new ColumnConstraints();
+        twoColumn.setPercentWidth(50);
+        GridPane topRow = new GridPane();
+        topRow.setHgap(12);
+        topRow.getColumnConstraints().addAll(twoColumn, twoColumn);
+        topRow.add(statTile("Folders", foldersValue), 0, 0);
+        topRow.add(statTile("Files", filesValue), 1, 0);
 
-        GridPane grid = new GridPane();
-        grid.getStyleClass().add("stats-grid");
-        grid.setHgap(12);
-        grid.setVgap(8);
-        grid.getColumnConstraints().addAll(column, column);
-        grid.add(statTile("Folders", foldersValue), 0, 0);
-        grid.add(statTile("Files", filesValue), 1, 0);
-        grid.add(statTile("Speed", speedValue), 0, 1);
-        grid.add(statTile("Read", readValue), 1, 1);
+        ColumnConstraints threeColumn = new ColumnConstraints();
+        threeColumn.setPercentWidth(100.0 / 3);
+        GridPane bottomRow = new GridPane();
+        bottomRow.setHgap(12);
+        bottomRow.getColumnConstraints().addAll(threeColumn, threeColumn, threeColumn);
+        bottomRow.add(statTile("Speed", speedValue), 0, 0);
+        bottomRow.add(statTile("Read", readValue), 1, 0);
+        bottomRow.add(statTile("Scan time", scanTimeValue), 2, 0);
 
-        getChildren().addAll(pathLabel, grid);
+        getChildren().addAll(topRow, bottomRow);
     }
 
     private VBox statTile(String label, Label valueLabel) {
@@ -45,10 +43,6 @@ public class StatisticsComponent extends VBox {
         titleLabel.getStyleClass().add("stat-tile-label");
         valueLabel.getStyleClass().add("stat-tile-value");
         return new VBox(2, titleLabel, valueLabel);
-    }
-
-    public void setPath(String path) {
-        Platform.runLater(() -> pathLabel.setText(path));
     }
 
     public void updateSpeed(String filesSpeedText, String bytesSpeedText) {
@@ -63,5 +57,9 @@ public class StatisticsComponent extends VBox {
             foldersValue.setText(String.format("%,d", folders));
             filesValue.setText(String.format("%,d", files));
         });
+    }
+
+    public void updateScanTime(String durationText) {
+        Platform.runLater(() -> scanTimeValue.setText(durationText));
     }
 }

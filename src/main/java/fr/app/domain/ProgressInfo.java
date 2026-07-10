@@ -5,10 +5,10 @@ import fr.app.utils.SizeFormatter;
 import java.time.Duration;
 
 public class ProgressInfo {
-    private final long filesScanned;        // fichiers traités
-    private final long foldersScanned;   // répertoires traités
-    private final Duration duration; // durée du scan
-    private final long totalSizeBytes; // taille totale des fichiers scannés en octets
+    private final long filesScanned;
+    private final long foldersScanned;
+    private final Duration duration;
+    private final long totalSizeBytes;
 
 
 

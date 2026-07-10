@@ -1,4 +1,4 @@
-package fr.app.ui.view.component;
+package fr.app.ui.view.table;
 
 import fr.app.domain.FileNode;
 import fr.app.ui.view.CategoryPalette;
@@ -19,11 +19,15 @@ import java.util.Map;
 
 public class FileNodeTreeTableViewComponent extends TreeTableView<FileNode> {
 
+    public final FileNodeTreeTableContextMenu contextMenu = new FileNodeTreeTableContextMenu(this);
+
     private Map<String, Color> categoryColors = Map.of();
 
     public FileNodeTreeTableViewComponent() {
         getStyleClass().add("tree-table-view");
+        setPlaceholder(new Label("Choose a folder and scan to see results"));
         setupColumns();
+        setContextMenu(contextMenu);
     }
 
     /**
@@ -51,23 +55,18 @@ public class FileNodeTreeTableViewComponent extends TreeTableView<FileNode> {
     }
 
     private void setupColumns() {
-        // Nom avec tooltip sur le chemin
+        // Name, with a tooltip showing the full path
         TreeTableColumn<FileNode, String> nameColumn = new TreeTableColumn<>("Name");
-        nameColumn.setCellValueFactory(param ->
-                new SimpleStringProperty(param.getValue().getValue().getName()));
+        nameColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue().getName()));
         nameColumn.setCellFactory(column -> new TreeTableCell<>() {
             private final Circle categoryDot = new Circle(4);
 
             @Override
             protected void updateItem(String name, boolean empty) {
                 super.updateItem(name, empty);
-                if (empty || name == null) {
-                    setText(null);
-                    setGraphic(null);
-                    setTooltip(null);
-                } else {
+                if (!empty && name != null) {
                     setText(name);
-                    TreeItem<FileNode> treeItem = getTreeTableRow().getTreeItem();
+                    TreeItem<FileNode> treeItem = getTreeTableView().getTreeItem(getIndex());
                     FileNode node = treeItem != null ? treeItem.getValue() : null;
                     if (node != null) {
                         Tooltip tooltip = new Tooltip(node.getPath().toString());
@@ -75,62 +74,55 @@ public class FileNodeTreeTableViewComponent extends TreeTableView<FileNode> {
                     }
                     categoryDot.setFill(resolveColor(treeItem));
                     setGraphic(categoryDot);
+                    return;
                 }
+                setText(null);
+                setGraphic(null);
+                setTooltip(null);
+
             }
         });
 
-        // Taille formatée
+        // Formatted size
         TreeTableColumn<FileNode, String> sizeColumn = new TreeTableColumn<>("Size");
-        sizeColumn.setCellValueFactory(param ->
-                new SimpleStringProperty(SizeFormatter.format(param.getValue().getValue().getSize()))
-        );
+        sizeColumn.setCellValueFactory(
+                param -> new SimpleStringProperty(SizeFormatter.format(param.getValue().getValue().getSize())));
 
-        // Pourcentage du parent
-        TreeTableColumn<FileNode, Double> percentColumn = new TreeTableColumn<>("%");
-        percentColumn.setCellValueFactory(param ->
-                new SimpleDoubleProperty(param.getValue().getValue().getPercentOfParent() / 100).asObject());
-        percentColumn.setCellFactory(col -> new ColoredProgressBarTreeTableCell<>());
+        // Percent of parent
+        TreeTableColumn<FileNode, Double> percentColumn = new TreeTableColumn<>("% of Parent");
+        percentColumn.setCellValueFactory(
+                param -> new SimpleDoubleProperty(param.getValue().getValue().getPercentOfParent() / 100).asObject());
+        percentColumn.setCellFactory(col -> new ColoredProgressBarTreeTableCell());
 
-        // Nombre d'éléments
+        // Item count
         TreeTableColumn<FileNode, Integer> countColumn = new TreeTableColumn<>("Items");
-        countColumn.setCellValueFactory(param ->
-                new SimpleIntegerProperty(param.getValue().getValue().getChildrenCount()).asObject());
+        countColumn.setCellValueFactory(
+                param -> new SimpleIntegerProperty(param.getValue().getValue().getChildrenCount()).asObject());
 
-        // Date de dernière modification
+        // Last modified date
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        TreeTableColumn<FileNode, String> modifiedColumn = new TreeTableColumn<>("Last Modified");
+        TreeTableColumn<FileNode, String> modifiedColumn = new TreeTableColumn<>("Modified");
         modifiedColumn.setCellValueFactory(param -> {
             Instant instant = param.getValue().getValue().getLastModified();
             String formatted = dateFormatter.withZone(ZoneId.systemDefault()).format(instant);
             return new SimpleStringProperty(formatted);
         });
 
-        // Extension
-        TreeTableColumn<FileNode, String> extensionColumn = new TreeTableColumn<>("Extension");
-        extensionColumn.setCellValueFactory(param ->
-                new SimpleStringProperty(param.getValue().getValue().getExtension()));
-
         getColumns().addAll(
                 nameColumn,
                 sizeColumn,
                 percentColumn,
                 countColumn,
-                modifiedColumn,
-                extensionColumn
-        );
+                modifiedColumn);
 
-        // ContextMenu
-        setContextMenu(new FileNodeTreeTableContextMenu(this));
-
-        // Bindings responsive
+        // Responsive column widths
         widthProperty().addListener((obs, oldWidth, newWidth) -> {
             double totalWidth = newWidth.doubleValue();
-            nameColumn.setPrefWidth(totalWidth * 0.30);
+            nameColumn.setPrefWidth(totalWidth * 0.35);
             sizeColumn.setPrefWidth(totalWidth * 0.15);
-            percentColumn.setPrefWidth(totalWidth * 0.15);
+            percentColumn.setPrefWidth(totalWidth * 0.20);
             countColumn.setPrefWidth(totalWidth * 0.10);
             modifiedColumn.setPrefWidth(totalWidth * 0.20);
-            extensionColumn.setPrefWidth(totalWidth * 0.10);
         });
     }
 }

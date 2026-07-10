@@ -1,4 +1,4 @@
-package fr.app.ui.view.component;
+package fr.app.ui.view.sidebar;
 
 import fr.app.ui.view.CategorySlice;
 import fr.app.ui.view.DonutChartDrawer;
@@ -41,10 +41,11 @@ public class DonutChartComponent extends StackPane {
         getChildren().addAll(canvas, centerBox);
     }
 
-    public void update(List<CategorySlice> slices, long totalBytes, long totalFiles, long totalFolders) {
+    public void update(List<CategorySlice> slices, long totalBytes) {
         currentSlices = slices;
-        totalLabel.setText(SizeFormatter.format(totalBytes));
-        subLabel.setText(String.format("%,d files · %,d folders", totalFiles, totalFolders));
+        String[] parts = SizeFormatter.format(totalBytes).split(" ", 2);
+        totalLabel.setText(parts[0]);
+        subLabel.setText((parts.length > 1 ? parts[1] : "") + " USED");
         redraw();
     }
 

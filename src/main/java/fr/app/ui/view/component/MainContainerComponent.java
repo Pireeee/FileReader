@@ -1,5 +1,7 @@
 package fr.app.ui.view.component;
 
+import fr.app.ui.view.table.FileNodeTreeTableViewComponent;
+import fr.app.ui.view.table.ScanningOverlayComponent;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
@@ -7,6 +9,7 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 public class MainContainerComponent extends VBox {
@@ -15,6 +18,7 @@ public class MainContainerComponent extends VBox {
     public final ToggleButton fileTypesToggle = new ToggleButton("File types");
     public final ToggleButton inspectorToggle = new ToggleButton("Details");
     public final FileNodeTreeTableViewComponent treeTableViewComponent = new FileNodeTreeTableViewComponent();
+    public final ScanningOverlayComponent scanningOverlay = new ScanningOverlayComponent();
     public final InspectorPanelComponent inspectorPanel = new InspectorPanelComponent();
     public final Label itemCountLabel = new Label("0 of 0 items");
     public final Label sortLabel = new Label("Sorted by size ↓");
@@ -59,8 +63,9 @@ public class MainContainerComponent extends VBox {
 
         inspectorPanel.setVisible(false);
         inspectorPanel.setManaged(false);
-        HBox.setHgrow(treeTableViewComponent, Priority.ALWAYS);
-        HBox contentRow = new HBox(treeTableViewComponent, inspectorPanel);
+        StackPane tableStack = new StackPane(treeTableViewComponent, scanningOverlay);
+        HBox.setHgrow(tableStack, Priority.ALWAYS);
+        HBox contentRow = new HBox(tableStack, inspectorPanel);
         VBox.setVgrow(contentRow, Priority.ALWAYS);
 
         getChildren().addAll(topBar, contentRow, statusBar);
