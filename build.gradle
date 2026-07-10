@@ -7,13 +7,15 @@ repositories {
     mavenCentral()
 }
 
+version = '2.0.0'
+
 java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
 
 application {
-    mainClass = 'fr.app.ui.MainApp'
+    mainClass = 'fr.app.ui.Launcher'
 }
 
 javafx {
@@ -25,10 +27,42 @@ javafx {
 jar {
     manifest {
         attributes(
-                'Main-Class': 'fr.app.ui.MainApp' // Remplace par ton package et ta classe Main
+                'Main-Class': 'fr.app.ui.Launcher' // Remplace par ton package et ta classe Main
         )
     }
 }
 
 dependencies {
+}
+
+// === Native Windows executable (jpackage) ===
+// Produces a portable app-image (FileReader/FileReader.exe + bundled runtime),
+// no installer toolchain (WiX) required.
+def jpackageInputDir = layout.buildDirectory.dir("jpackage-input")
+def jpackageOutputDir = layout.buildDirectory.dir("jpackage")
+
+tasks.register('prepareJpackageInput', Copy) {
+    dependsOn tasks.named('jar')
+    into jpackageInputDir
+    from tasks.named('jar').map { it.archiveFile }
+    from configurations.runtimeClasspath
+}
+
+tasks.register('jpackageAppImage', Exec) {
+    dependsOn tasks.named('prepareJpackageInput')
+    doFirst {
+        project.delete(jpackageOutputDir)
+    }
+    def javaHome = org.gradle.internal.jvm.Jvm.current().javaHome
+    def jpackageBin = new File(javaHome, 'bin/jpackage.exe')
+    commandLine jpackageBin.absolutePath,
+            '--type', 'app-image',
+            '--name', 'FileReader',
+            '--app-version', project.version.toString(),
+            '--vendor', 'Pierre CLEMENT',
+            '--input', jpackageInputDir.get().asFile.absolutePath,
+            '--main-jar', tasks.named('jar').get().archiveFileName.get(),
+            '--main-class', 'fr.app.ui.Launcher',
+            '--icon', file('src/main/resources/icon/file-reader-icon.ico').absolutePath,
+            '--dest', jpackageOutputDir.get().asFile.absolutePath
 }

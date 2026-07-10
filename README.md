@@ -32,7 +32,7 @@ It helps you find and navigate through the largest folders and files on your dis
 
 ## 📦 **Download**
 
-👉 Get the latest **V1.0.0 – Pre-release** from the [Releases](./releases) page.
+👉 Get the latest **V2.0.0 – Pre-release** from the [Releases](./releases) page.
 
 ---
 
@@ -40,9 +40,9 @@ It helps you find and navigate through the largest folders and files on your dis
 
 1️⃣ Download the `.zip`.
 2️⃣ Unzip it anywhere.
-3️⃣ Double-click `launch.bat`.
+3️⃣ Double-click `FileReader.exe`.
 
-✅ No need to install Java — a custom runtime is included.
+✅ No need to install Java — a bundled runtime is included in the package.
 ✅ Tested on **Windows**.
 
 ---
@@ -63,22 +63,35 @@ For local development & debugging:
 
 ```bash
 # Clean and rebuild
-gradle clean build
+./gradlew clean build
 
-# Run directly (if you have JavaFX SDK)
-java --module-path "C:/javafx-sdk-21.0.7/lib" --add-modules javafx.controls,javafx.fxml -jar build/libs/FileReader-1.0.0.jar
+# Run directly from source
+./gradlew run
 
-# Or run with the custom runtime
-runtime/bin/java --module fr.app/fr.app.ui.MainApp
+# Build the standalone Windows executable (FileReader.exe + bundled runtime)
+./gradlew jpackageAppImage
+# -> output in build/jpackage/FileReader/
 ```
+
+`jpackageAppImage` requires a full JDK 21 (not just a JRE) since it shells
+out to the `jpackage` tool bundled with the JDK. It produces a portable
+**app-image** — no installer toolchain (WiX) needed — so the output folder
+can be zipped and shared as-is; recipients just unzip and run `FileReader.exe`.
+
+> The app's entry point for packaging is `fr.app.ui.Launcher`, a thin
+> `main()` that delegates to `MainApp`. This indirection is required:
+> jpackage runs the app off a plain classpath (not the module path), and
+> JavaFX refuses to start when the class holding `main()` extends
+> `Application` directly in that setup ("JavaFX runtime components are
+> missing").
 
 ---
 
 ## 🔒 **Release Status**
 
-> **Version:** `1.0.0` *(Pre-release)*
-> ✅ Fully working via `launch.bat`
-> ⚠️ A standalone `.exe` installer will be added later.
+> **Version:** `2.0.0` *(Pre-release)*
+> ✅ Fully working standalone `FileReader.exe` (no Java install required)
+> ⚠️ Ships as a portable app-image; a proper installer (`.msi`) would need WiX Toolset and may come later.
 
 ---
 
