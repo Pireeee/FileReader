@@ -43,11 +43,11 @@ class DirectoryScanTask extends RecursiveTask<FileNode> {
         }
 
         if (Files.isSymbolicLink(path)) {
-            Logger.info("Skipping symlink: " + path);
+            Logger.debug(() -> "Skipping symlink: " + path);
             return nodeFactory.createEmptyNode(path.getFileName().toString(), path, false);
         }
 
-        Logger.info("Scanning path: " + path);
+        Logger.debug(() -> "Scanning path: " + path);
         File file = path.toFile();
 
         if (file.isDirectory()) {
