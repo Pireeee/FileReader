@@ -171,7 +171,10 @@ public class MainController {
                     statisticsComponent.updateCounts(progressInfo.getFoldersScanned(), progressInfo.getFilesScanned());
                     statisticsComponent.updateScanTime(progressInfo.getDurationFormatted());
                 }),
-                scanResult -> Platform.runLater(() -> onScanComplete(scanResult)),
+                scanResult -> {
+                    ScanPresentation presentation = derivePresentation(scanResult);
+                    Platform.runLater(() -> applyPresentation(presentation));
+                },
                 error -> Platform.runLater(() -> onScanError(error)),
                 () -> Platform.runLater(this::onScanCancelled)
         );
@@ -203,20 +206,39 @@ public class MainController {
         view.getMainContainer().scanningOverlay.setScanning(scanning);
     }
 
-    private void onScanComplete(ScanResult result) {
-        setScanning(false);
-        currentRoot = result.getRootNode();
-        extensionRoot = buildExtensionRoot(currentRoot);
+    // Runs on a background thread: pure computation only, must not touch JavaFX nodes.
+    private ScanPresentation derivePresentation(ScanResult result) {
+        FileNode root = result.getRootNode();
+        FileNode extRoot = buildExtensionRoot(root);
+        List<CategorySlice> slices = donutChartDrawer.buildSlices(root);
+        Map<String, Color> folderColors = toColorMap(slices);
+        Map<String, Color> typeColors = toColorMap(donutChartDrawer.buildSlices(extRoot));
+        return new ScanPresentation(root, extRoot, slices, folderColors, typeColors, countNodes(root));
+    }
 
-        List<CategorySlice> slices = donutChartDrawer.buildSlices(currentRoot);
-        categoryColors = toColorMap(slices);
-        fileTypeColors = toColorMap(donutChartDrawer.buildSlices(extensionRoot));
+    private void applyPresentation(ScanPresentation presentation) {
+        setScanning(false);
+        currentRoot = presentation.root();
+        extensionRoot = presentation.extensionRoot();
+        categoryColors = presentation.categoryColors();
+        fileTypeColors = presentation.fileTypeColors();
 
         view.getMainContainer().treeTableViewComponent.setCategoryColors(
                 viewMode == ViewMode.FOLDERS ? categoryColors : fileTypeColors);
         refreshTreeView();
-        updateDonutChart(currentRoot, slices);
+
+        long totalBytes = presentation.root().getSize();
+        donutChartComponent.update(presentation.slices(), totalBytes);
+        sidebarComponent.pathBarComponent.setSize(SizeFormatter.format(totalBytes));
+        statisticsComponent.updateCounts(presentation.counts().folders(), presentation.counts().files());
     }
+
+    private record ScanPresentation(FileNode root,
+                                    FileNode extensionRoot,
+                                    List<CategorySlice> slices,
+                                    Map<String, Color> categoryColors,
+                                    Map<String, Color> fileTypeColors,
+                                    NodeCounts counts) {}
 
     private Map<String, Color> toColorMap(List<CategorySlice> slices) {
         return slices.stream()
@@ -269,14 +291,6 @@ public class MainController {
                 byExtension.computeIfAbsent(extension, key -> new ArrayList<>()).add(child);
             }
         }
-    }
-
-    private void updateDonutChart(FileNode root, List<CategorySlice> slices) {
-        NodeCounts counts = countNodes(root);
-        long totalBytes = root.getSize();
-        donutChartComponent.update(slices, totalBytes);
-        sidebarComponent.pathBarComponent.setSize(SizeFormatter.format(totalBytes));
-        statisticsComponent.updateCounts(counts.folders(), counts.files());
     }
 
     private record NodeCounts(long files, long folders) {}
