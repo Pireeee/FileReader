@@ -2,30 +2,31 @@ package fr.app.infrastructure;
 
 import fr.app.domain.FileNode;
 
-import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 class FileNodeFactory {
 
-    public FileNode createFileNode(File file) {
+    public FileNode createFileNode(Path path, BasicFileAttributes attributes) {
+        String name = nameOf(path);
         return new FileNode(
-                file.getName(),
-                file.toPath(),
-                file.length(),
+                name,
+                path,
+                attributes.size(),
                 0,
                 false,
-                Instant.ofEpochMilli(file.lastModified()),
-                getFileExtension(file.getName()),
+                attributes.lastModifiedTime().toInstant(),
+                getFileExtension(name),
                 new ArrayList<>()
         );
     }
 
-    public FileNode createEmptyNode(String name, Path path, boolean isDirectory) {
+    public FileNode createEmptyNode(Path path, boolean isDirectory) {
         return new FileNode(
-                name,
+                nameOf(path),
                 path,
                 0,
                 0,
@@ -36,20 +37,26 @@ class FileNodeFactory {
         );
     }
 
-    public FileNode createDirectoryNode(File directory, List<FileNode> children) {
+    public FileNode createDirectoryNode(Path path, BasicFileAttributes attributes, List<FileNode> children) {
         long totalSize = children.stream().mapToLong(FileNode::getSize).sum();
         List<FileNode> updated = updateChildrenPercentages(children, totalSize);
 
         return new FileNode(
-                directory.getName(),
-                directory.toPath(),
+                nameOf(path),
+                path,
                 totalSize,
                 0,
                 true,
-                Instant.ofEpochMilli(directory.lastModified()),
+                attributes.lastModifiedTime().toInstant(),
                 "",
                 updated
         );
+    }
+
+    // getFileName() is null for filesystem roots like C:\
+    private String nameOf(Path path) {
+        Path fileName = path.getFileName();
+        return fileName != null ? fileName.toString() : path.toString();
     }
 
     private List<FileNode> updateChildrenPercentages(List<FileNode> children, long totalSize) {

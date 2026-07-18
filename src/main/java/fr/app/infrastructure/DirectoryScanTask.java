@@ -4,33 +4,40 @@ import fr.app.domain.FileNode;
 import fr.app.domain.ScanCancelledException;
 import fr.app.utils.Logger;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryIteratorException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
-
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
+/**
+ * Scans one directory. The caller (parent task, or FileSystemScanner for the root)
+ * has already read this path's attributes and ruled out symlinks and junctions,
+ * so no filesystem call is repeated here.
+ */
 class DirectoryScanTask extends RecursiveTask<FileNode> {
 
     private final Path path;
-    private final FileSystemScanner scanner;
+    private final BasicFileAttributes attributes;
     private final FileNodeFactory nodeFactory;
     private final ProgressReporter progressReporter;
     private final AtomicBoolean cancelled;
 
     public DirectoryScanTask(
             Path path,
-            FileSystemScanner scanner,
+            BasicFileAttributes attributes,
             FileNodeFactory nodeFactory,
             ProgressReporter progressReporter,
             AtomicBoolean cancelled
     ) {
         this.path = path;
-        this.scanner = scanner;
+        this.attributes = attributes;
         this.nodeFactory = nodeFactory;
         this.progressReporter = progressReporter;
         this.cancelled = cancelled;
@@ -42,56 +49,50 @@ class DirectoryScanTask extends RecursiveTask<FileNode> {
             throw new ScanCancelledException();
         }
 
-        if (Files.isSymbolicLink(path)) {
-            Logger.debug(() -> "Skipping symlink: " + path);
-            return nodeFactory.createEmptyNode(path.getFileName().toString(), path, false);
-        }
-
-        Logger.debug(() -> "Scanning path: " + path);
-        File file = path.toFile();
-
-        if (file.isDirectory()) {
-            return processDirectory(file);
-        } else {
-            return processFile(file);
-        }
-    }
-
-    private FileNode processDirectory(File directory) {
+        Logger.debug(() -> "Scanning directory: " + path);
         progressReporter.incrementFolders();
 
-        if (!directory.canRead()) {
-            Logger.warn("Cannot read directory: " + directory.getPath());
-            return nodeFactory.createEmptyNode(directory.getName(), directory.toPath(), true);
+        List<FileNode> children;
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+            children = scanChildren(stream);
+        } catch (IOException | DirectoryIteratorException e) {
+            Logger.warn("Permission denied or inaccessible: " + path);
+            return nodeFactory.createEmptyNode(path, true);
         }
 
-        File[] files = directory.listFiles();
-        if (files == null) {
-            Logger.warn("Permission denied or inaccessible: " + directory.getPath());
-            return nodeFactory.createEmptyNode(directory.getName(), directory.toPath(), true);
-        }
-
-        List<FileNode> children = scanChildren(files);
-        return nodeFactory.createDirectoryNode(directory, children);
+        return nodeFactory.createDirectoryNode(path, attributes, children);
     }
 
-    private List<FileNode> scanChildren(File[] files) {
+    private List<FileNode> scanChildren(DirectoryStream<Path> stream) {
         List<FileNode> children = new ArrayList<>();
         List<DirectoryScanTask> subtasks = new ArrayList<>();
 
-        for (File file : files) {
+        for (Path child : stream) {
             if (cancelled.get()) {
                 throw new ScanCancelledException();
             }
 
-            if (file.isDirectory()) {
+            BasicFileAttributes attrs;
+            try {
+                attrs = Files.readAttributes(
+                        child, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            } catch (IOException e) {
+                Logger.warn("Cannot read attributes: " + child);
+                children.add(nodeFactory.createEmptyNode(child, false));
+                continue;
+            }
+
+            if (attrs.isSymbolicLink() || attrs.isOther()) {
+                Logger.debug(() -> "Skipping symlink or junction: " + child);
+                children.add(nodeFactory.createEmptyNode(child, false));
+            } else if (attrs.isDirectory()) {
                 DirectoryScanTask subtask = new DirectoryScanTask(
-                        file.toPath(), scanner, nodeFactory, progressReporter, cancelled);
+                        child, attrs, nodeFactory, progressReporter, cancelled);
                 subtask.fork();
                 subtasks.add(subtask);
             } else {
-                children.add(nodeFactory.createFileNode(file));
-                progressReporter.incrementFiles(file.length());
+                children.add(nodeFactory.createFileNode(child, attrs));
+                progressReporter.incrementFiles(attrs.size());
             }
         }
 
@@ -100,11 +101,5 @@ class DirectoryScanTask extends RecursiveTask<FileNode> {
         }
 
         return children;
-    }
-
-    private FileNode processFile(File file) {
-        long fileSize = file.length();
-        progressReporter.incrementFiles(fileSize);
-        return nodeFactory.createFileNode(file);
     }
 }
