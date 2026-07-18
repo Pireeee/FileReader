@@ -40,6 +40,24 @@ dependencies {
 // no installer toolchain (WiX) required.
 def jpackageInputDir = layout.buildDirectory.dir("jpackage-input")
 def jpackageOutputDir = layout.buildDirectory.dir("jpackage")
+def jdepsModulesFile = layout.buildDirectory.file("jdeps/modules.txt")
+def jlinkRuntimeDir = layout.buildDirectory.dir("jlink-runtime")
+
+// Antivirus/indexer can briefly hold a lock on a just-written .exe, making a
+// plain delete() flaky right after a previous jpackage/jlink run. Retry a few
+// times with a short pause instead of failing the whole build on that.
+def deleteWithRetry = { dir ->
+    def attempts = 5
+    for (int i = 1; i <= attempts; i++) {
+        try {
+            project.delete(dir)
+            return
+        } catch (Exception e) {
+            if (i == attempts) throw e
+            Thread.sleep(1000)
+        }
+    }
+}
 
 tasks.register('prepareJpackageInput', Copy) {
     dependsOn tasks.named('jar')
@@ -48,8 +66,59 @@ tasks.register('prepareJpackageInput', Copy) {
     from configurations.runtimeClasspath
 }
 
+// Computes the exact set of JDK platform modules the app actually uses
+// (java.base, java.desktop, javafx.*, ...) by inspecting the real jars,
+// instead of a hand-maintained list that silently goes stale as
+// dependencies are added.
+tasks.register('computeModules') {
+    dependsOn tasks.named('jar')
+    def outputFile = jdepsModulesFile
+    inputs.files(tasks.named('jar').map { it.archiveFile }, configurations.runtimeClasspath)
+    outputs.file(outputFile)
+    doLast {
+        def javaHome = org.gradle.internal.jvm.Jvm.current().javaHome
+        def jdepsBin = new File(javaHome, 'bin/jdeps.exe')
+        def jarFile = tasks.named('jar').get().archiveFile.get().asFile
+        def allJars = ([jarFile] + configurations.runtimeClasspath.files).collect { it.absolutePath }
+
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine([jdepsBin.absolutePath,
+                         '--multi-release', '21',
+                         '--ignore-missing-deps',
+                         '--print-module-deps'] + allJars)
+            standardOutput = stdout
+        }
+
+        def modules = stdout.toString().trim()
+        def out = outputFile.get().asFile
+        out.parentFile.mkdirs()
+        out.text = modules
+        logger.lifecycle("Computed JDK modules: ${modules}")
+    }
+}
+
+// Builds a trimmed custom runtime containing only the modules computeModules
+// found, instead of bundling the full JDK (which is 2-3x larger).
+tasks.register('jlinkRuntime', Exec) {
+    dependsOn tasks.named('computeModules')
+    doFirst {
+        project.delete(jlinkRuntimeDir)
+        def javaHome = org.gradle.internal.jvm.Jvm.current().javaHome
+        def jlinkBin = new File(javaHome, 'bin/jlink.exe')
+        def modules = jdepsModulesFile.get().asFile.text.trim()
+        commandLine jlinkBin.absolutePath,
+                '--add-modules', modules,
+                '--strip-debug',
+                '--no-header-files',
+                '--no-man-pages',
+                '--compress=zip-9',
+                '--output', jlinkRuntimeDir.get().asFile.absolutePath
+    }
+}
+
 tasks.register('jpackageAppImage', Exec) {
-    dependsOn tasks.named('prepareJpackageInput')
+    dependsOn tasks.named('prepareJpackageInput'), tasks.named('jlinkRuntime')
     doFirst {
         project.delete(jpackageOutputDir)
     }
@@ -64,5 +133,6 @@ tasks.register('jpackageAppImage', Exec) {
             '--main-jar', tasks.named('jar').get().archiveFileName.get(),
             '--main-class', 'fr.app.ui.Launcher',
             '--icon', file('src/main/resources/icon/file-reader-icon.ico').absolutePath,
+            '--runtime-image', jlinkRuntimeDir.get().asFile.absolutePath,
             '--dest', jpackageOutputDir.get().asFile.absolutePath
 }

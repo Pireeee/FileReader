@@ -45,6 +45,13 @@ It helps you find and navigate through the largest folders and files on your dis
 ✅ No need to install Java — a bundled runtime is included in the package.
 ✅ Tested on **Windows**.
 
+> ⚠️ **Windows SmartScreen warning:** the executable isn't code-signed
+> (a trusted certificate costs money — see [Release Status](#-release-status)
+> below), so Windows will show a **"Windows protected your PC"** prompt.
+> Click **More info → Run anyway** to launch it. This is expected and safe;
+> it's just the cost of shipping an unsigned binary, not a sign of anything
+> wrong with the app.
+
 ---
 
 ## ⚙️ **Built With**
@@ -92,6 +99,9 @@ can be zipped and shared as-is; recipients just unzip and run `FileReader.exe`.
 > **Version:** `2.0.0` *(Pre-release)*
 > ✅ Fully working standalone `FileReader.exe` (no Java install required)
 > ⚠️ Ships as a portable app-image; a proper installer (`.msi`) would need WiX Toolset and may come later.
+> ⚠️ Unsigned — triggers a Windows SmartScreen warning (see [How to Run](#️-how-to-run)).
+> Code signing certificates are paid (or free via [SignPath.io](https://signpath.io)'s
+> open-source program, subject to their review); not set up yet.
 
 ---
 
